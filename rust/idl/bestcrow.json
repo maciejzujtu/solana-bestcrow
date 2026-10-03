@@ -62,6 +62,103 @@
       "args": []
     },
     {
+      "name": "cast_vote",
+      "discriminator": [
+        20,
+        212,
+        15,
+        189,
+        69,
+        180,
+        69,
+        151
+      ],
+      "accounts": [
+        {
+          "name": "wallet",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "backer"
+          ]
+        },
+        {
+          "name": "campaign",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  109,
+                  112,
+                  97,
+                  105,
+                  103,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign.creator",
+                "account": "Campaign"
+              },
+              {
+                "kind": "account",
+                "path": "campaign.campaign_id",
+                "account": "Campaign"
+              }
+            ]
+          },
+          "relations": [
+            "backer"
+          ]
+        },
+        {
+          "name": "backer",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  99,
+                  107,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              },
+              {
+                "kind": "account",
+                "path": "wallet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vote",
+          "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "approve",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "claim_refund",
       "discriminator": [
         15,
@@ -359,6 +456,67 @@
       "args": []
     },
     {
+      "name": "close_vote",
+      "discriminator": [
+        137,
+        152,
+        87,
+        249,
+        170,
+        239,
+        133,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  109,
+                  112,
+                  97,
+                  105,
+                  103,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign.creator",
+                "account": "Campaign"
+              },
+              {
+                "kind": "account",
+                "path": "campaign.campaign_id",
+                "account": "Campaign"
+              }
+            ]
+          },
+          "relations": [
+            "vote"
+          ]
+        },
+        {
+          "name": "wallet",
+          "writable": true
+        },
+        {
+          "name": "vote",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "create_campaign",
       "discriminator": [
         111,
@@ -406,38 +564,7 @@
           }
         },
         {
-          "name": "dao_binding",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  100,
-                  97,
-                  111,
-                  45,
-                  98,
-                  105,
-                  110,
-                  100,
-                  105,
-                  110,
-                  103
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "meta_dao"
-              }
-            ]
-          }
-        },
-        {
           "name": "quote_mint"
-        },
-        {
-          "name": "base_mint"
         },
         {
           "name": "vault",
@@ -552,9 +679,6 @@
           }
         },
         {
-          "name": "meta_dao"
-        },
-        {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -625,9 +749,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "proposal"
         }
       ],
       "args": []
@@ -1038,9 +1159,6 @@
           }
         },
         {
-          "name": "proposal"
-        },
-        {
           "name": "quote_mint",
           "relations": [
             "campaign"
@@ -1221,9 +1339,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "proposal"
         }
       ],
       "args": [
@@ -1655,16 +1770,16 @@
       ]
     },
     {
-      "name": "DaoBinding",
+      "name": "Vote",
       "discriminator": [
-        38,
-        212,
-        48,
-        162,
-        139,
-        142,
-        38,
-        197
+        96,
+        91,
+        104,
+        57,
+        145,
+        35,
+        172,
+        155
       ]
     }
   ],
@@ -1746,6 +1861,19 @@
         105,
         7
       ]
+    },
+    {
+      "name": "VoteCast",
+      "discriminator": [
+        39,
+        53,
+        195,
+        104,
+        188,
+        17,
+        225,
+        213
+      ]
     }
   ],
   "errors": [
@@ -1802,7 +1930,7 @@
     {
       "code": 6010,
       "name": "WrongMilestone",
-      "msg": "Wrong milestone or MetaDAO proposal"
+      "msg": "Wrong milestone"
     },
     {
       "code": 6011,
@@ -1841,26 +1969,16 @@
     },
     {
       "code": 6018,
-      "name": "InvalidMetaDaoAccount",
-      "msg": "MetaDAO account has an unexpected owner, discriminator, or layout"
+      "name": "VoteClosed",
+      "msg": "Voting period is closed"
     },
     {
       "code": 6019,
-      "name": "InvalidMarketBinding",
-      "msg": "MetaDAO DAO and proposal are not bound to this campaign"
+      "name": "VoteOpen",
+      "msg": "Voting period is still open"
     },
     {
       "code": 6020,
-      "name": "InvalidProposalState",
-      "msg": "MetaDAO proposal is not in the required state"
-    },
-    {
-      "code": 6021,
-      "name": "MarketStillLive",
-      "msg": "MetaDAO market is still live"
-    },
-    {
-      "code": 6022,
       "name": "InvalidTokenAccount",
       "msg": "Token mint, vault, or recipient account does not match the campaign"
     }
@@ -1912,15 +2030,7 @@
             "type": "pubkey"
           },
           {
-            "name": "base_mint",
-            "type": "pubkey"
-          },
-          {
             "name": "vault",
-            "type": "pubkey"
-          },
-          {
-            "name": "meta_dao",
             "type": "pubkey"
           },
           {
@@ -1960,7 +2070,7 @@
             "type": "i64"
           },
           {
-            "name": "market_timeout_secs",
+            "name": "vote_duration_secs",
             "type": "i64"
           },
           {
@@ -2036,14 +2146,6 @@
           },
           {
             "name": "quote_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "base_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "meta_dao",
             "type": "pubkey"
           }
         ]
@@ -2134,7 +2236,7 @@
             "type": "i64"
           },
           {
-            "name": "market_timeout_secs",
+            "name": "vote_duration_secs",
             "type": "i64"
           },
           {
@@ -2160,26 +2262,6 @@
       }
     },
     {
-      "name": "DaoBinding",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "dao",
-            "type": "pubkey"
-          },
-          {
-            "name": "campaign",
-            "type": "pubkey"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
-        ]
-      }
-    },
-    {
       "name": "EvidenceSubmitted",
       "type": {
         "kind": "struct",
@@ -2191,10 +2273,6 @@
           {
             "name": "milestone_index",
             "type": "u8"
-          },
-          {
-            "name": "proposal",
-            "type": "pubkey"
           },
           {
             "name": "evidence_hash",
@@ -2250,10 +2328,6 @@
             "type": "i64"
           },
           {
-            "name": "proposal",
-            "type": "pubkey"
-          },
-          {
             "name": "evidence_hash",
             "type": {
               "array": [
@@ -2267,8 +2341,16 @@
             "type": "i64"
           },
           {
-            "name": "market_deadline",
+            "name": "vote_deadline",
             "type": "i64"
+          },
+          {
+            "name": "yes_votes",
+            "type": "u64"
+          },
+          {
+            "name": "no_votes",
+            "type": "u64"
           },
           {
             "name": "status",
@@ -2293,10 +2375,6 @@
           {
             "name": "due_at",
             "type": "i64"
-          },
-          {
-            "name": "proposal",
-            "type": "pubkey"
           }
         ]
       }
@@ -2341,6 +2419,66 @@
           },
           {
             "name": "Rejected"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Vote",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "milestone_index",
+            "type": "u8"
+          },
+          {
+            "name": "approve",
+            "type": "bool"
+          },
+          {
+            "name": "weight",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VoteCast",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "campaign",
+            "type": "pubkey"
+          },
+          {
+            "name": "milestone_index",
+            "type": "u8"
+          },
+          {
+            "name": "wallet",
+            "type": "pubkey"
+          },
+          {
+            "name": "approve",
+            "type": "bool"
+          },
+          {
+            "name": "weight",
+            "type": "u64"
           }
         ]
       }

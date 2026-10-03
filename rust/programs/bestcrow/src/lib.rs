@@ -6,7 +6,6 @@ pub mod constants;
 pub mod error;
 pub mod events;
 pub mod instructions;
-pub mod meta_dao;
 pub mod policy;
 pub mod state;
 pub mod transfer;
@@ -40,6 +39,12 @@ pub mod bestcrow {
     }
     pub fn submit_evidence(ctx: Context<SubmitEvidence>, evidence_hash: [u8; 32]) -> Result<()> {
         instructions::milestone::submit_evidence(ctx, evidence_hash)
+    }
+    pub fn cast_vote(ctx: Context<CastVote>, approve: bool) -> Result<()> {
+        instructions::voting::cast_vote(ctx, approve)
+    }
+    pub fn close_vote(ctx: Context<CloseVote>) -> Result<()> {
+        instructions::voting::close_vote(ctx)
     }
     pub fn resolve_milestone(ctx: Context<ResolveMilestone>) -> Result<()> {
         instructions::milestone::resolve_milestone(ctx)

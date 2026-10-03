@@ -2,9 +2,8 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { BackendConfig } from "./config.js";
 import type { SolanaGateway } from "./chain.js";
 import type { KeeperService } from "./keeper.js";
-import type { MetaDaoPrepareRequest, MetaDaoService } from "./metadao.js";
 import type { KeeperDispatcher } from "./dispatch.js";
-import type { MarketService, TradeRequest } from "./market.js";
+import type { CreateRequest, CrowdfundingService } from "./crowdfunding.js";
 
 export class ApiServer {
   private server: Server | null = null;
@@ -15,8 +14,7 @@ export class ApiServer {
     private readonly config: BackendConfig,
     private readonly chain: SolanaGateway,
     private readonly keeper: KeeperService,
-    private readonly metaDao: MetaDaoService,
-    private readonly market: MarketService,
+    private readonly crowdfunding: CrowdfundingService,
     private readonly dispatcher: KeeperDispatcher | null,
   ) {}
 
@@ -53,30 +51,25 @@ export class ApiServer {
         this.send(res, 200, await this.keeper.scanActions());
         return;
       }
-      if (req.method === "POST" && url.pathname === "/meta-dao/prepare") {
-        this.send(res, 200, await this.metaDao.prepare(await this.readBody(req) as MetaDaoPrepareRequest));
+      if (req.method === "POST" && url.pathname === "/campaigns/prepare") {
+        this.send(res, 200, this.crowdfunding.prepareCreate(await this.readBody(req) as CreateRequest));
         return;
       }
-      const marketMatch = /^\/campaigns\/([^/]+)\/market(?:\/(prepare|redeem))?$/.exec(url.pathname);
-      if (marketMatch && (req.method === "GET" || req.method === "POST")) {
-        const campaign = await this.chain.getCampaign(marketMatch[1]);
+      const prepareMatch = /^\/campaigns\/([^/]+)\/(pledge|withdraw|evidence|vote)\/prepare$/.exec(url.pathname);
+      if (req.method === "POST" && prepareMatch) {
+        this.chain.publicKey(prepareMatch[1]);
+        const campaign = await this.chain.getCampaign(prepareMatch[1]);
         if (!campaign) return this.send(res, 404, { error: "Campaign not found" });
-        if (req.method === "GET" && !marketMatch[2]) {
-          const milestone = url.searchParams.get("milestone");
-          if (milestone && !/^\d+$/.test(milestone)) return this.send(res, 400, { error: "Invalid milestone number" });
-          this.send(res, 200, await this.market.snapshot(campaign, milestone ? Number(milestone) : undefined));
-          return;
+        const input = await this.readBody(req) as Record<string, unknown>;
+        const action = prepareMatch[2];
+        if (action === "pledge") this.send(res, 200, this.crowdfunding.preparePledge(campaign, input.wallet as string, input.amount as string));
+        if (action === "withdraw") this.send(res, 200, this.crowdfunding.prepareWithdraw(campaign, input.wallet as string, input.amount as string));
+        if (action === "evidence") this.send(res, 200, this.crowdfunding.prepareEvidence(campaign, input.creator as string, input.evidenceHash as string));
+        if (action === "vote") {
+          if (typeof input.approve !== "boolean") return this.send(res, 400, { error: "approve must be boolean" });
+          this.send(res, 200, await this.crowdfunding.prepareVote(campaign, input.wallet as string, input.approve));
         }
-        if (req.method === "POST" && marketMatch[2]) {
-          const input = await this.readBody(req);
-          if (marketMatch[2] === "prepare") {
-            this.send(res, 200, await this.market.prepare(campaign, input as TradeRequest));
-          } else {
-            const redeem = input as { wallet: string; milestone: number };
-            this.send(res, 200, await this.market.prepareRedeem(campaign, redeem.wallet, redeem.milestone));
-          }
-          return;
-        }
+        return;
       }
       const refundMatch = /^\/campaigns\/([^/]+)\/refund$/.exec(url.pathname);
       if (req.method === "GET" && refundMatch) {
@@ -103,7 +96,7 @@ export class ApiServer {
       this.send(res, 404, { error: "Route not found" });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      const badInput = error instanceof SyntaxError || /invalid|missing|wrong|positive|large|unknown|not open|not active|not finalized|does not exist|no winning|outside token range|more than/i.test(message);
+      const badInput = error instanceof SyntaxError || /invalid|missing|wrong|positive|large|unknown|not open|not active|unsupported|outside|exceed|requires|must|ended|unavailable/i.test(message);
       console.error("API error", message);
       this.send(res, badInput ? 400 : 502, { error: message });
     }

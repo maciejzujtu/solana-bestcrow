@@ -22,7 +22,7 @@ pub enum BestcrowError {
     DeadlinePassed,
     #[msg("Deadline has not passed")]
     DeadlineOpen,
-    #[msg("Wrong milestone or MetaDAO proposal")]
+    #[msg("Wrong milestone")]
     WrongMilestone,
     #[msg("Arithmetic overflow")]
     Arithmetic,
@@ -38,14 +38,10 @@ pub enum BestcrowError {
     EmptyEvidence,
     #[msg("Account is still needed for funding or refund")]
     ReceiptStillNeeded,
-    #[msg("MetaDAO account has an unexpected owner, discriminator, or layout")]
-    InvalidMetaDaoAccount,
-    #[msg("MetaDAO DAO and proposal are not bound to this campaign")]
-    InvalidMarketBinding,
-    #[msg("MetaDAO proposal is not in the required state")]
-    InvalidProposalState,
-    #[msg("MetaDAO market is still live")]
-    MarketStillLive,
+    #[msg("Voting period is closed")]
+    VoteClosed,
+    #[msg("Voting period is still open")]
+    VoteOpen,
     #[msg("Token mint, vault, or recipient account does not match the campaign")]
     InvalidTokenAccount,
 }

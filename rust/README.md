@@ -1,37 +1,32 @@
-# Bestcrow v2 Anchor program
+# Bestcrow Anchor program
 
-`bestcrow` is the Rust custody and milestone state machine. The TypeScript backend and any frontend consume the generated IDL in `idl/` and the Codama client in `clients/js/`. The on-chain program never accepts a platform administrator for release or refunds.
+The program keeps campaign terms and USDC custody on chain. It has no DAO, proposal, project-token or market account dependency.
 
 ## Accounts
 
-- `Campaign` PDA: `["campaign", creator, campaign_id_le]`. Holds immutable terms, balances, statuses and up to ten ordered milestones.
-- `Vault` SPL Token account PDA: `["vault", campaign]`, owned by the campaign PDA, holds Circle USDC only.
-- `Backer` PDA: `["backer", campaign, wallet]`, records the contribution for pro-rata refunds.
-- `DaoBinding` PDA: `["dao-binding", meta_dao]`, prevents one DAO's proposal markets from controlling unrelated campaigns.
+- `Campaign` PDA: `["campaign", creator, campaign_id_le]`. Fixed terms, balances, status and up to ten milestones.
+- `Vault` SPL Token account PDA: `["vault", campaign]`. Campaign-owned Circle USDC escrow.
+- `Backer` PDA: `["backer", campaign, wallet]`. Final contribution and refund receipt.
+- `Vote` PDA: `["vote", campaign, milestone_index, wallet]`. One immutable vote per wallet per milestone.
 
-Campaigns require five to ten ordered milestones. The kickoff tranche is at most 30% of the goal, each milestone is at most 50%, and all payouts must sum exactly to the goal. These limits are validated on chain.
-
-The quote mint must be the Circle USDC mint on devnet or mainnet and have six decimals. The creator supplies a distinct project `base_mint`. The MetaDAO DAO must use exactly that base/quote pair and have a funded spot pool sufficient to seed its required conditional liquidity. A precreated, distinct Draft MetaDAO proposal is fixed for each milestone at campaign creation. All proposal accounts are passed in the same order as the milestones.
+Only the Circle USDC mints on devnet or mainnet are accepted; the mint must have six decimals. Campaigns require five to ten ordered milestones. Kickoff is at most 30% of the goal, each milestone at most 50%, and all allocations sum exactly to the goal.
 
 ## Instructions
 
-- `create_campaign`: fixes goal, metadata hash, funding deadline, market timeout, kickoff amount, milestones, DAO and mints. Its `remaining_accounts` are the ordered MetaDAO proposal accounts.
-- `pledge`, `withdraw_pledge`, `close_backer`: SPL deposits and exits during funding. Reaching the exact goal transfers the kickoff amount and activates the campaign.
-- `finalize_funding`, `cancel_campaign`: freeze remaining escrow for refunds when funding fails or the creator cancels before activation.
-- `submit_evidence`: creator records a nonzero evidence hash before the current due date while the precommitted proposal is still Draft.
-- `resolve_milestone`: anyone can submit the finalized MetaDAO proposal. `Passed` transfers the tranche to the creator; `Failed` freezes the remaining escrow.
-- `expire_milestone`: anyone can terminate after a missed evidence or market deadline. A finalized MetaDAO outcome cannot be overwritten by a timeout.
-- `claim_refund`: anyone may execute a backer's refund to that wallet's USDC account. The backer receipt closes and its rent returns to the backer.
-- `sweep_dust`: after every positive backer receipt has claimed, anyone can send rounding dust to the creator.
+- `create_campaign`: fixes campaign ID, goal, USDC mint, hash, deadlines, voting duration and payouts.
+- `pledge`: transfers USDC from a backer. Exact goal activates the campaign and pays the kickoff tranche.
+- `withdraw_pledge`: lets a backer leave during funding before the deadline and goal.
+- `finalize_funding`, `cancel_campaign`: mark unsuccessful funding and freeze escrow for refunds.
+- `submit_evidence`: creator records a nonzero evidence hash by the milestone deadline and opens voting.
+- `cast_vote`: a backer casts Yes/No with their final contribution as weight. The vote PDA prevents duplicate voting.
+- `resolve_milestone`: anyone may settle after voting closes. Yes weight must exceed half of *all* raised USDC. If it does, the tranche is paid; otherwise the campaign terminates for refunds.
+- `expire_milestone`: anyone may terminate after the creator misses an evidence deadline.
+- `claim_refund`: anyone may send a backer's proportional share of remaining escrow to that backer's USDC account.
+- `close_vote`, `close_backer`: permissionless receipt cleanup when no longer needed; rent returns to the wallet.
+- `sweep_dust`: after all backer refunds, transfer rounding dust to the creator.
 
-Refunds use a frozen pool and denominator: `floor(backer_contribution * refund_pool / total_raised)`. Claim order cannot change an entitlement. Released tranches cannot be clawed back. Wallet addresses, amounts and hashes are public on Solana; no personal identity data is stored.
+Refund entitlement is `floor(contribution * frozen_refund_pool / total_raised)`. Claim order cannot change it. Already released tranches are not refundable. An inactive backer cannot vote; contributions cannot change once a campaign is active.
 
-## MetaDAO boundary
+## Upgrade authority and verification
 
-The program reads the verified owner and discriminator of MetaDAO v0.6.1 DAO and Proposal accounts. It relies on MetaDAO's own finalization for TWAP calculation, threshold choice and conditional vault settlement. StageGate does not reimplement those formulas. The MetaDAO program ID and account layout are pinned in `programs/bestcrow/src/meta_dao.rs`. The backend uses MetaDAO's official TypeScript SDK to prepare its unsigned proposal instructions.
-
-Only a timely finalized, non-sponsored proposal can release a tranche. Team-sponsored proposals terminate the campaign for refunds, and a proposal launched after the StageGate market deadline can time out even if it later finalizes. The evidence hash is an immutable reference to off-chain material, not an oracle of product quality. The proposal's Squads action must be reviewed by participants before they fund the campaign. MetaDAO proposal setup, funding its spot liquidity, and proposal staking happen outside StageGate escrow.
-
-## Upgrade authority
-
-The Solana upgradeable loader controls program upgrades. While an upgrade authority exists, it can replace this logic. `../scripts/check-upgrade-authority.sh` reads the deployed authority without signing. A production deployment should disclose its authority and review policy before accepting funds.
+The Solana upgradeable loader may replace program logic while an upgrade authority exists. Disclose the deployed authority and review policy before accepting funds. This repository currently has no verified v2 deployment. Unit tests and IDL generation do not prove live token transfers.

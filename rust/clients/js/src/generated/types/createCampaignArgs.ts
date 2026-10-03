@@ -34,7 +34,7 @@ export type CreateCampaignArgs = {
   goal: bigint;
   initialRelease: bigint;
   fundingDeadline: bigint;
-  marketTimeoutSecs: bigint;
+  voteDurationSecs: bigint;
   metadataHash: Array<number>;
   milestones: Array<MilestoneInput>;
 };
@@ -44,7 +44,7 @@ export type CreateCampaignArgsArgs = {
   goal: number | bigint;
   initialRelease: number | bigint;
   fundingDeadline: number | bigint;
-  marketTimeoutSecs: number | bigint;
+  voteDurationSecs: number | bigint;
   metadataHash: Array<number>;
   milestones: Array<MilestoneInputArgs>;
 };
@@ -55,7 +55,7 @@ export function getCreateCampaignArgsEncoder(): Encoder<CreateCampaignArgsArgs> 
     ["goal", getU64Encoder()],
     ["initialRelease", getU64Encoder()],
     ["fundingDeadline", getI64Encoder()],
-    ["marketTimeoutSecs", getI64Encoder()],
+    ["voteDurationSecs", getI64Encoder()],
     ["metadataHash", getArrayEncoder(getU8Encoder(), { size: 32 })],
     ["milestones", getArrayEncoder(getMilestoneInputEncoder())],
   ]);
@@ -67,7 +67,7 @@ export function getCreateCampaignArgsDecoder(): Decoder<CreateCampaignArgs> {
     ["goal", getU64Decoder()],
     ["initialRelease", getU64Decoder()],
     ["fundingDeadline", getI64Decoder()],
-    ["marketTimeoutSecs", getI64Decoder()],
+    ["voteDurationSecs", getI64Decoder()],
     ["metadataHash", getArrayDecoder(getU8Decoder(), { size: 32 })],
     ["milestones", getArrayDecoder(getMilestoneInputDecoder())],
   ]);

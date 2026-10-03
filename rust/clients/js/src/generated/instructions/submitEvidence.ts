@@ -30,7 +30,6 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
-  type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type WritableAccount,
@@ -59,7 +58,6 @@ export type SubmitEvidenceInstruction<
   TProgram extends string = typeof BESTCROW_PROGRAM_ADDRESS,
   TAccountCreator extends string | AccountMeta<string> = string,
   TAccountCampaign extends string | AccountMeta<string> = string,
-  TAccountProposal extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -72,9 +70,6 @@ export type SubmitEvidenceInstruction<
       TAccountCampaign extends string
         ? WritableAccount<TAccountCampaign>
         : TAccountCampaign,
-      TAccountProposal extends string
-        ? ReadonlyAccount<TAccountProposal>
-        : TAccountProposal,
       ...TRemainingAccounts,
     ]
   >;
@@ -116,25 +111,18 @@ export function getSubmitEvidenceInstructionDataCodec(): FixedSizeCodec<
 export type SubmitEvidenceInput<
   TAccountCreator extends InstructionSignerInput = InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput = InstructionAccountInput,
-  TAccountProposal extends InstructionAccountInput = InstructionAccountInput,
 > = {
   creator: TAccountCreator;
   campaign: TAccountCampaign;
-  proposal: TAccountProposal;
   evidenceHash: SubmitEvidenceInstructionDataArgs["evidenceHash"];
 };
 
 export function getSubmitEvidenceInstruction<
   TAccountCreator extends InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput,
-  TAccountProposal extends InstructionAccountInput,
   TProgramAddress extends Address = typeof BESTCROW_PROGRAM_ADDRESS,
 >(
-  input: SubmitEvidenceInput<
-    TAccountCreator,
-    TAccountCampaign,
-    TAccountProposal
-  >,
+  input: SubmitEvidenceInput<TAccountCreator, TAccountCampaign>,
   config?: { programAddress?: TProgramAddress },
 ): SubmitEvidenceInstruction<
   TProgramAddress,
@@ -145,10 +133,6 @@ export function getSubmitEvidenceInstruction<
   ResolvedInstructionAccountMeta<
     TAccountCampaign,
     InstructionAccountInputAddress<TAccountCampaign>
-  >,
-  ResolvedInstructionAccountMeta<
-    TAccountProposal,
-    InstructionAccountInputAddress<TAccountProposal>
   >
 > {
   // Program address.
@@ -169,11 +153,6 @@ export function getSubmitEvidenceInstruction<
       isSigner: false,
       isWritable: true,
     },
-    proposal: {
-      value: input.proposal ?? null,
-      isSigner: false,
-      isWritable: false,
-    },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -187,7 +166,6 @@ export function getSubmitEvidenceInstruction<
     accounts: [
       getAccountMeta("creator", accounts.creator),
       getAccountMeta("campaign", accounts.campaign),
-      getAccountMeta("proposal", accounts.proposal),
     ],
     data: getSubmitEvidenceInstructionDataEncoder().encode(
       args as SubmitEvidenceInstructionDataArgs,
@@ -202,10 +180,6 @@ export function getSubmitEvidenceInstruction<
     ResolvedInstructionAccountMeta<
       TAccountCampaign,
       InstructionAccountInputAddress<TAccountCampaign>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountProposal,
-      InstructionAccountInputAddress<TAccountProposal>
     >
   >);
 }
@@ -218,7 +192,6 @@ export type ParsedSubmitEvidenceInstruction<
   accounts: {
     creator: TAccountMetas[0];
     campaign: TAccountMetas[1];
-    proposal: TAccountMetas[2];
   };
   data: SubmitEvidenceInstructionData;
 };
@@ -231,12 +204,12 @@ export function parseSubmitEvidenceInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedSubmitEvidenceInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 3) {
+  if (instruction.accounts.length < 2) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 3,
+        expectedAccountMetas: 2,
       },
     );
   }
@@ -248,11 +221,7 @@ export function parseSubmitEvidenceInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: {
-      creator: getNextAccount(),
-      campaign: getNextAccount(),
-      proposal: getNextAccount(),
-    },
+    accounts: { creator: getNextAccount(), campaign: getNextAccount() },
     data: getSubmitEvidenceInstructionDataDecoder().decode(instruction.data),
   };
 }

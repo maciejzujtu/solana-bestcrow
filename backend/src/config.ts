@@ -2,8 +2,6 @@ import { PublicKey } from "@solana/web3.js";
 
 // Must match rust/programs/bestcrow/src/lib.rs::declare_id! and the generated IDL.
 const DEFAULT_STAGEGATE_PROGRAM_ID = "EousWVK2cePYb9zvv1oWSca4VNdRQqYef8CsxQ6BL57R";
-const DEFAULT_META_DAO_PROGRAM_ID = "FUTARELBfJfQ8RDGhg1wdhddq1odMAJUePHFuBYfUxKq";
-const DEFAULT_CONDITIONAL_VAULT_PROGRAM_ID = "VLTX1ishMBbcX3rdBWGssxawAo1Q2X2qxYFYqiGodVg";
 const DEFAULT_USDC_MINTS = [
   "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
@@ -41,8 +39,6 @@ export class BackendConfig {
     readonly pollMs: number,
     readonly maxBodyBytes: number,
     readonly stagegateProgramId: string,
-    readonly metaDaoProgramId: string,
-    readonly conditionalVaultProgramId: string,
     readonly usdcMints: readonly string[],
     readonly keeperAutosend: boolean,
     readonly keeperKeypairPath: string | undefined,
@@ -80,8 +76,6 @@ export class BackendConfig {
       pollMs,
       integerSetting("MAX_BODY_BYTES", env.MAX_BODY_BYTES, 16_384, 1024, 1_048_576),
       publicKeySetting("STAGEGATE_PROGRAM_ID", env.STAGEGATE_PROGRAM_ID ?? DEFAULT_STAGEGATE_PROGRAM_ID),
-      publicKeySetting("META_DAO_PROGRAM_ID", env.META_DAO_PROGRAM_ID ?? DEFAULT_META_DAO_PROGRAM_ID),
-      publicKeySetting("CONDITIONAL_VAULT_PROGRAM_ID", env.CONDITIONAL_VAULT_PROGRAM_ID ?? DEFAULT_CONDITIONAL_VAULT_PROGRAM_ID),
       usdcMints,
       keeperAutosend,
       keeperKeypairPath,

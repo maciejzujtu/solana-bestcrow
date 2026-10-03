@@ -8,8 +8,6 @@
 
 import {
   combineCodec,
-  getAddressDecoder,
-  getAddressEncoder,
   getArrayDecoder,
   getArrayEncoder,
   getI64Decoder,
@@ -20,7 +18,6 @@ import {
   getU64Encoder,
   getU8Decoder,
   getU8Encoder,
-  type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
@@ -35,20 +32,22 @@ import {
 export type Milestone = {
   amount: bigint;
   dueAt: bigint;
-  proposal: Address;
   evidenceHash: Array<number>;
   submittedAt: bigint;
-  marketDeadline: bigint;
+  voteDeadline: bigint;
+  yesVotes: bigint;
+  noVotes: bigint;
   status: MilestoneStatus;
 };
 
 export type MilestoneArgs = {
   amount: number | bigint;
   dueAt: number | bigint;
-  proposal: Address;
   evidenceHash: Array<number>;
   submittedAt: number | bigint;
-  marketDeadline: number | bigint;
+  voteDeadline: number | bigint;
+  yesVotes: number | bigint;
+  noVotes: number | bigint;
   status: MilestoneStatusArgs;
 };
 
@@ -56,10 +55,11 @@ export function getMilestoneEncoder(): FixedSizeEncoder<MilestoneArgs> {
   return getStructEncoder([
     ["amount", getU64Encoder()],
     ["dueAt", getI64Encoder()],
-    ["proposal", getAddressEncoder()],
     ["evidenceHash", getArrayEncoder(getU8Encoder(), { size: 32 })],
     ["submittedAt", getI64Encoder()],
-    ["marketDeadline", getI64Encoder()],
+    ["voteDeadline", getI64Encoder()],
+    ["yesVotes", getU64Encoder()],
+    ["noVotes", getU64Encoder()],
     ["status", getMilestoneStatusEncoder()],
   ]);
 }
@@ -68,10 +68,11 @@ export function getMilestoneDecoder(): FixedSizeDecoder<Milestone> {
   return getStructDecoder([
     ["amount", getU64Decoder()],
     ["dueAt", getI64Decoder()],
-    ["proposal", getAddressDecoder()],
     ["evidenceHash", getArrayDecoder(getU8Decoder(), { size: 32 })],
     ["submittedAt", getI64Decoder()],
-    ["marketDeadline", getI64Decoder()],
+    ["voteDeadline", getI64Decoder()],
+    ["yesVotes", getU64Decoder()],
+    ["noVotes", getU64Decoder()],
     ["status", getMilestoneStatusDecoder()],
   ]);
 }

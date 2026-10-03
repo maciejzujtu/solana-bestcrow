@@ -12,3 +12,4 @@ export * from "./contributionChanged";
 export * from "./evidenceSubmitted";
 export * from "./fundsMoved";
 export * from "./milestoneResolved";
+export * from "./voteCast";

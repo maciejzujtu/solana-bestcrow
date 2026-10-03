@@ -10,7 +10,7 @@ pub fn validate_terms(args: &CreateCampaignArgs, now: i64) -> Result<()> {
     require!(args.metadata_hash != [0; 32], BestcrowError::InvalidTerms);
     require!(args.funding_deadline > now, BestcrowError::InvalidTerms);
     require!(
-        (MIN_MARKET_TIMEOUT_SECS..=MAX_MARKET_TIMEOUT_SECS).contains(&args.market_timeout_secs),
+        (MIN_VOTE_DURATION_SECS..=MAX_VOTE_DURATION_SECS).contains(&args.vote_duration_secs),
         BestcrowError::InvalidTerms
     );
     require!(
@@ -24,7 +24,7 @@ pub fn validate_terms(args: &CreateCampaignArgs, now: i64) -> Result<()> {
     );
     let mut sum = args.initial_release;
     let mut previous_due = args.funding_deadline;
-    for (index, spec) in args.milestones.iter().enumerate() {
+    for spec in &args.milestones {
         require!(spec.amount > 0, BestcrowError::InvalidTerms);
         require!(
             (spec.amount as u128) * BPS_DENOMINATOR
@@ -32,17 +32,7 @@ pub fn validate_terms(args: &CreateCampaignArgs, now: i64) -> Result<()> {
             BestcrowError::InvalidTerms
         );
         require!(
-            spec.proposal != Pubkey::default(),
-            BestcrowError::InvalidTerms
-        );
-        require!(
-            spec.due_at > previous_due.saturating_add(args.market_timeout_secs),
-            BestcrowError::InvalidTerms
-        );
-        require!(
-            !args.milestones[..index]
-                .iter()
-                .any(|earlier| earlier.proposal == spec.proposal),
+            spec.due_at > previous_due.saturating_add(args.vote_duration_secs),
             BestcrowError::InvalidTerms
         );
         sum = sum
@@ -73,6 +63,10 @@ pub fn refund_amount(contribution: u64, pool: u64, denominator: u64) -> Result<u
     u64::try_from(amount).map_err(|_| error!(BestcrowError::Arithmetic))
 }
 
+pub fn vote_passed(yes_votes: u64, total_raised: u64) -> bool {
+    yes_votes > total_raised / 2
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -84,23 +78,22 @@ mod tests {
             goal: 1_000_000,
             initial_release: 300_000,
             funding_deadline: 10,
-            market_timeout_secs: MIN_MARKET_TIMEOUT_SECS,
+            vote_duration_secs: MIN_VOTE_DURATION_SECS,
             metadata_hash: [1; 32],
             milestones: (0..5)
                 .map(|index| MilestoneInput {
                     amount: 140_000,
-                    due_at: 10 + (index + 1) * (MIN_MARKET_TIMEOUT_SECS + 1),
-                    proposal: Pubkey::new_unique(),
+                    due_at: 10 + (index + 1) * (MIN_VOTE_DURATION_SECS + 1),
                 })
                 .collect(),
         }
     }
 
     #[test]
-    fn terms_require_five_bounded_market_tranches() {
+    fn terms_require_five_bounded_vote_tranches() {
         assert!(validate_terms(&terms(), 0).is_ok());
         let mut invalid = terms();
-        invalid.milestones[0].due_at = 10 + MIN_MARKET_TIMEOUT_SECS;
+        invalid.milestones[0].due_at = 10 + MIN_VOTE_DURATION_SECS;
         assert!(validate_terms(&invalid, 0).is_err());
         invalid = terms();
         invalid.initial_release = 300_001;
@@ -121,10 +114,10 @@ mod tests {
     }
 
     #[test]
-    fn duplicate_proposals_cannot_control_two_tranches() {
-        let mut invalid = terms();
-        invalid.milestones[1].proposal = invalid.milestones[0].proposal;
-        assert!(validate_terms(&invalid, 0).is_err());
+    fn vote_requires_absolute_backer_majority() {
+        assert!(!vote_passed(50, 100));
+        assert!(vote_passed(51, 100));
+        assert!(!vote_passed(0, 100));
     }
 
     #[test]

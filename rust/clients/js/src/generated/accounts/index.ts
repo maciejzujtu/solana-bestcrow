@@ -8,4 +8,4 @@
 
 export * from "./backer";
 export * from "./campaign";
-export * from "./daoBinding";
+export * from "./vote";

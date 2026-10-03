@@ -21,7 +21,6 @@ pub enum MilestoneStatus {
 pub struct MilestoneInput {
     pub amount: u64,
     pub due_at: i64,
-    pub proposal: Pubkey,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -30,7 +29,7 @@ pub struct CreateCampaignArgs {
     pub goal: u64,
     pub initial_release: u64,
     pub funding_deadline: i64,
-    pub market_timeout_secs: i64,
+    pub vote_duration_secs: i64,
     pub metadata_hash: [u8; 32],
     pub milestones: Vec<MilestoneInput>,
 }
@@ -39,10 +38,11 @@ pub struct CreateCampaignArgs {
 pub struct Milestone {
     pub amount: u64,
     pub due_at: i64,
-    pub proposal: Pubkey,
     pub evidence_hash: [u8; 32],
     pub submitted_at: i64,
-    pub market_deadline: i64,
+    pub vote_deadline: i64,
+    pub yes_votes: u64,
+    pub no_votes: u64,
     pub status: MilestoneStatus,
 }
 
@@ -51,9 +51,7 @@ pub struct Campaign {
     pub creator: Pubkey,
     pub campaign_id: u64,
     pub quote_mint: Pubkey,
-    pub base_mint: Pubkey,
     pub vault: Pubkey,
-    pub meta_dao: Pubkey,
     pub goal: u64,
     pub total_raised: u64,
     pub escrow_balance: u64,
@@ -63,7 +61,7 @@ pub struct Campaign {
     pub refund_denominator: u64,
     pub refunded_amount: u64,
     pub funding_deadline: i64,
-    pub market_timeout_secs: i64,
+    pub vote_duration_secs: i64,
     pub metadata_hash: [u8; 32],
     pub current_milestone: u8,
     pub status: CampaignStatus,
@@ -111,12 +109,15 @@ impl Backer {
 }
 
 #[account]
-pub struct DaoBinding {
-    pub dao: Pubkey,
+pub struct Vote {
     pub campaign: Pubkey,
+    pub wallet: Pubkey,
+    pub milestone_index: u8,
+    pub approve: bool,
+    pub weight: u64,
     pub bump: u8,
 }
 
-impl DaoBinding {
-    pub const SPACE: usize = 8 + 32 + 32 + 1;
+impl Vote {
+    pub const SPACE: usize = 8 + 32 + 32 + 1 + 1 + 8 + 1;
 }

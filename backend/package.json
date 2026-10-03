@@ -11,16 +11,12 @@
   },
   "dependencies": {
     "@bestcrow/client": "file:../rust/clients/js",
-    "@coral-xyz/anchor": "0.29.0",
-    "@metadaoproject/programs": "0.1.1-alpha.2",
     "@solana/kit": "8.3.0",
     "@solana/spl-token": "0.3.11",
-    "@solana/web3.js": "1.98.4",
-    "bn.js": "5.2.2"
+    "@solana/web3.js": "1.98.4"
   },
   "devDependencies": {
     "@types/node": "22.15.29",
-    "@types/bn.js": "5.2.0",
     "tsx": "4.20.6",
     "typescript": "5.9.3"
   },

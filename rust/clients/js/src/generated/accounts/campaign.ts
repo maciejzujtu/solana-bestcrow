@@ -68,9 +68,7 @@ export type Campaign = {
   creator: Address;
   campaignId: bigint;
   quoteMint: Address;
-  baseMint: Address;
   vault: Address;
-  metaDao: Address;
   goal: bigint;
   totalRaised: bigint;
   escrowBalance: bigint;
@@ -80,7 +78,7 @@ export type Campaign = {
   refundDenominator: bigint;
   refundedAmount: bigint;
   fundingDeadline: bigint;
-  marketTimeoutSecs: bigint;
+  voteDurationSecs: bigint;
   metadataHash: Array<number>;
   currentMilestone: number;
   status: CampaignStatus;
@@ -95,9 +93,7 @@ export type CampaignArgs = {
   creator: Address;
   campaignId: number | bigint;
   quoteMint: Address;
-  baseMint: Address;
   vault: Address;
-  metaDao: Address;
   goal: number | bigint;
   totalRaised: number | bigint;
   escrowBalance: number | bigint;
@@ -107,7 +103,7 @@ export type CampaignArgs = {
   refundDenominator: number | bigint;
   refundedAmount: number | bigint;
   fundingDeadline: number | bigint;
-  marketTimeoutSecs: number | bigint;
+  voteDurationSecs: number | bigint;
   metadataHash: Array<number>;
   currentMilestone: number;
   status: CampaignStatusArgs;
@@ -126,9 +122,7 @@ export function getCampaignEncoder(): Encoder<CampaignArgs> {
       ["creator", getAddressEncoder()],
       ["campaignId", getU64Encoder()],
       ["quoteMint", getAddressEncoder()],
-      ["baseMint", getAddressEncoder()],
       ["vault", getAddressEncoder()],
-      ["metaDao", getAddressEncoder()],
       ["goal", getU64Encoder()],
       ["totalRaised", getU64Encoder()],
       ["escrowBalance", getU64Encoder()],
@@ -138,7 +132,7 @@ export function getCampaignEncoder(): Encoder<CampaignArgs> {
       ["refundDenominator", getU64Encoder()],
       ["refundedAmount", getU64Encoder()],
       ["fundingDeadline", getI64Encoder()],
-      ["marketTimeoutSecs", getI64Encoder()],
+      ["voteDurationSecs", getI64Encoder()],
       ["metadataHash", getArrayEncoder(getU8Encoder(), { size: 32 })],
       ["currentMilestone", getU8Encoder()],
       ["status", getCampaignStatusEncoder()],
@@ -159,9 +153,7 @@ export function getCampaignDecoder(): Decoder<Campaign> {
     ["creator", getAddressDecoder()],
     ["campaignId", getU64Decoder()],
     ["quoteMint", getAddressDecoder()],
-    ["baseMint", getAddressDecoder()],
     ["vault", getAddressDecoder()],
-    ["metaDao", getAddressDecoder()],
     ["goal", getU64Decoder()],
     ["totalRaised", getU64Decoder()],
     ["escrowBalance", getU64Decoder()],
@@ -171,7 +163,7 @@ export function getCampaignDecoder(): Decoder<Campaign> {
     ["refundDenominator", getU64Decoder()],
     ["refundedAmount", getU64Decoder()],
     ["fundingDeadline", getI64Decoder()],
-    ["marketTimeoutSecs", getI64Decoder()],
+    ["voteDurationSecs", getI64Decoder()],
     ["metadataHash", getArrayDecoder(getU8Decoder(), { size: 32 })],
     ["currentMilestone", getU8Decoder()],
     ["status", getCampaignStatusDecoder()],

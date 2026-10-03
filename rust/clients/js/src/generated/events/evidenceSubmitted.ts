@@ -42,7 +42,6 @@ export function getEvidenceSubmittedEventDiscriminatorBytes(): ReadonlyUint8Arra
 export type EvidenceSubmittedEvent = {
   campaign: Address;
   milestoneIndex: number;
-  proposal: Address;
   evidenceHash: Array<number>;
 };
 
@@ -54,7 +53,6 @@ export function getEvidenceSubmittedEventEncoder(): FixedSizeEncoder<EvidenceSub
     getStructEncoder([
       ["campaign", getAddressEncoder()],
       ["milestoneIndex", getU8Encoder()],
-      ["proposal", getAddressEncoder()],
       ["evidenceHash", getArrayEncoder(getU8Encoder(), { size: 32 })],
     ]),
     [getConstantEncoder(EVIDENCE_SUBMITTED_EVENT_DISCRIMINATOR)],
@@ -67,7 +65,6 @@ export function getEvidenceSubmittedEventDecoder(): FixedSizeDecoder<EvidenceSub
     getStructDecoder([
       ["campaign", getAddressDecoder()],
       ["milestoneIndex", getU8Decoder()],
-      ["proposal", getAddressDecoder()],
       ["evidenceHash", getArrayDecoder(getU8Decoder(), { size: 32 })],
     ]),
     [getConstantDecoder(EVIDENCE_SUBMITTED_EVENT_DISCRIMINATOR)],

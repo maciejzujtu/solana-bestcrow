@@ -7,8 +7,10 @@
  */
 
 export * from "./cancelCampaign";
+export * from "./castVote";
 export * from "./claimRefund";
 export * from "./closeBacker";
+export * from "./closeVote";
 export * from "./createCampaign";
 export * from "./expireMilestone";
 export * from "./finalizeFunding";

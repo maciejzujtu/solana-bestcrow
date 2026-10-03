@@ -36,18 +36,20 @@ import {
 import {
   getBackerCodec,
   getCampaignCodec,
-  getDaoBindingCodec,
+  getVoteCodec,
   type Backer,
   type BackerArgs,
   type Campaign,
   type CampaignArgs,
-  type DaoBinding,
-  type DaoBindingArgs,
+  type Vote,
+  type VoteArgs,
 } from "../accounts";
 import {
   getCancelCampaignInstruction,
+  getCastVoteInstructionAsync,
   getClaimRefundInstructionAsync,
   getCloseBackerInstructionAsync,
+  getCloseVoteInstruction,
   getCreateCampaignInstructionAsync,
   getExpireMilestoneInstruction,
   getFinalizeFundingInstruction,
@@ -57,8 +59,10 @@ import {
   getSweepDustInstructionAsync,
   getWithdrawPledgeInstructionAsync,
   parseCancelCampaignInstruction,
+  parseCastVoteInstruction,
   parseClaimRefundInstruction,
   parseCloseBackerInstruction,
+  parseCloseVoteInstruction,
   parseCreateCampaignInstruction,
   parseExpireMilestoneInstruction,
   parseFinalizeFundingInstruction,
@@ -68,14 +72,18 @@ import {
   parseSweepDustInstruction,
   parseWithdrawPledgeInstruction,
   type CancelCampaignInput,
+  type CastVoteAsyncInput,
   type ClaimRefundAsyncInput,
   type CloseBackerAsyncInput,
+  type CloseVoteInput,
   type CreateCampaignAsyncInput,
   type ExpireMilestoneInput,
   type FinalizeFundingInput,
   type ParsedCancelCampaignInstruction,
+  type ParsedCastVoteInstruction,
   type ParsedClaimRefundInstruction,
   type ParsedCloseBackerInstruction,
+  type ParsedCloseVoteInstruction,
   type ParsedCreateCampaignInstruction,
   type ParsedExpireMilestoneInstruction,
   type ParsedFinalizeFundingInstruction,
@@ -97,7 +105,7 @@ export const BESTCROW_PROGRAM_ADDRESS =
 export enum BestcrowAccount {
   Backer,
   Campaign,
-  DaoBinding,
+  Vote,
 }
 
 export function identifyBestcrowAccount(
@@ -130,12 +138,12 @@ export function identifyBestcrowAccount(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([38, 212, 48, 162, 139, 142, 38, 197]),
+        new Uint8Array([96, 91, 104, 57, 145, 35, 172, 155]),
       ),
       0,
     )
   ) {
-    return BestcrowAccount.DaoBinding;
+    return BestcrowAccount.Vote;
   }
   throw new SolanaError(
     SOLANA_ERROR__PROGRAM_CLIENTS__FAILED_TO_IDENTIFY_ACCOUNT,
@@ -150,6 +158,7 @@ export enum BestcrowEvent {
   EvidenceSubmitted,
   FundsMoved,
   MilestoneResolved,
+  VoteCast,
 }
 
 export function identifyBestcrowEvent(
@@ -222,6 +231,17 @@ export function identifyBestcrowEvent(
   ) {
     return BestcrowEvent.MilestoneResolved;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([39, 53, 195, 104, 188, 17, 225, 213]),
+      ),
+      0,
+    )
+  ) {
+    return BestcrowEvent.VoteCast;
+  }
   throw new Error(
     "The provided event could not be identified as a bestcrow event.",
   );
@@ -229,8 +249,10 @@ export function identifyBestcrowEvent(
 
 export enum BestcrowInstruction {
   CancelCampaign,
+  CastVote,
   ClaimRefund,
   CloseBacker,
+  CloseVote,
   CreateCampaign,
   ExpireMilestone,
   FinalizeFunding,
@@ -260,6 +282,17 @@ export function identifyBestcrowInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([20, 212, 15, 189, 69, 180, 69, 151]),
+      ),
+      0,
+    )
+  ) {
+    return BestcrowInstruction.CastVote;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([15, 16, 30, 161, 255, 228, 97, 60]),
       ),
       0,
@@ -277,6 +310,17 @@ export function identifyBestcrowInstruction(
     )
   ) {
     return BestcrowInstruction.CloseBacker;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([137, 152, 87, 249, 170, 239, 133, 59]),
+      ),
+      0,
+    )
+  ) {
+    return BestcrowInstruction.CloseVote;
   }
   if (
     containsBytes(
@@ -379,11 +423,17 @@ export type ParsedBestcrowInstruction<
       instructionType: BestcrowInstruction.CancelCampaign;
     } & ParsedCancelCampaignInstruction<TProgram>)
   | ({
+      instructionType: BestcrowInstruction.CastVote;
+    } & ParsedCastVoteInstruction<TProgram>)
+  | ({
       instructionType: BestcrowInstruction.ClaimRefund;
     } & ParsedClaimRefundInstruction<TProgram>)
   | ({
       instructionType: BestcrowInstruction.CloseBacker;
     } & ParsedCloseBackerInstruction<TProgram>)
+  | ({
+      instructionType: BestcrowInstruction.CloseVote;
+    } & ParsedCloseVoteInstruction<TProgram>)
   | ({
       instructionType: BestcrowInstruction.CreateCampaign;
     } & ParsedCreateCampaignInstruction<TProgram>)
@@ -421,6 +471,13 @@ export function parseBestcrowInstruction<TProgram extends string>(
         ...parseCancelCampaignInstruction(instruction),
       };
     }
+    case BestcrowInstruction.CastVote: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: BestcrowInstruction.CastVote,
+        ...parseCastVoteInstruction(instruction),
+      };
+    }
     case BestcrowInstruction.ClaimRefund: {
       assertIsInstructionWithAccounts(instruction);
       return {
@@ -433,6 +490,13 @@ export function parseBestcrowInstruction<TProgram extends string>(
       return {
         instructionType: BestcrowInstruction.CloseBacker,
         ...parseCloseBackerInstruction(instruction),
+      };
+    }
+    case BestcrowInstruction.CloseVote: {
+      assertIsInstructionWithAccounts(instruction);
+      return {
+        instructionType: BestcrowInstruction.CloseVote,
+        ...parseCloseVoteInstruction(instruction),
       };
     }
     case BestcrowInstruction.CreateCampaign: {
@@ -512,14 +576,17 @@ export type BestcrowPluginAccounts = {
     SelfFetchFunctions<BackerArgs, Backer>;
   campaign: ReturnType<typeof getCampaignCodec> &
     SelfFetchFunctions<CampaignArgs, Campaign>;
-  daoBinding: ReturnType<typeof getDaoBindingCodec> &
-    SelfFetchFunctions<DaoBindingArgs, DaoBinding>;
+  vote: ReturnType<typeof getVoteCodec> & SelfFetchFunctions<VoteArgs, Vote>;
 };
 
 export type BestcrowPluginInstructions = {
   cancelCampaign: (
     input: CancelCampaignInput,
   ) => ReturnType<typeof getCancelCampaignInstruction> &
+    SelfPlanAndSendFunctions;
+  castVote: (
+    input: CastVoteAsyncInput,
+  ) => ReturnType<typeof getCastVoteInstructionAsync> &
     SelfPlanAndSendFunctions;
   claimRefund: (
     input: ClaimRefundAsyncInput,
@@ -529,6 +596,9 @@ export type BestcrowPluginInstructions = {
     input: CloseBackerAsyncInput,
   ) => ReturnType<typeof getCloseBackerInstructionAsync> &
     SelfPlanAndSendFunctions;
+  closeVote: (
+    input: CloseVoteInput,
+  ) => ReturnType<typeof getCloseVoteInstruction> & SelfPlanAndSendFunctions;
   createCampaign: (
     input: CreateCampaignAsyncInput,
   ) => ReturnType<typeof getCreateCampaignInstructionAsync> &
@@ -577,13 +647,18 @@ export function bestcrowProgram() {
         accounts: {
           backer: addSelfFetchFunctions(client, getBackerCodec()),
           campaign: addSelfFetchFunctions(client, getCampaignCodec()),
-          daoBinding: addSelfFetchFunctions(client, getDaoBindingCodec()),
+          vote: addSelfFetchFunctions(client, getVoteCodec()),
         },
         instructions: {
           cancelCampaign: (input) =>
             addSelfPlanAndSendFunctions(
               client,
               getCancelCampaignInstruction(input),
+            ),
+          castVote: (input) =>
+            addSelfPlanAndSendFunctions(
+              client,
+              getCastVoteInstructionAsync(input),
             ),
           claimRefund: (input) =>
             addSelfPlanAndSendFunctions(
@@ -595,6 +670,8 @@ export function bestcrowProgram() {
               client,
               getCloseBackerInstructionAsync(input),
             ),
+          closeVote: (input) =>
+            addSelfPlanAndSendFunctions(client, getCloseVoteInstruction(input)),
           createCampaign: (input) =>
             addSelfPlanAndSendFunctions(
               client,

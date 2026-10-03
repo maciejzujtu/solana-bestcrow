@@ -57,7 +57,6 @@ export type ResolveMilestoneInstruction<
   TProgram extends string = typeof BESTCROW_PROGRAM_ADDRESS,
   TAccountCaller extends string | AccountMeta<string> = string,
   TAccountCampaign extends string | AccountMeta<string> = string,
-  TAccountProposal extends string | AccountMeta<string> = string,
   TAccountQuoteMint extends string | AccountMeta<string> = string,
   TAccountVault extends string | AccountMeta<string> = string,
   TAccountCreator extends string | AccountMeta<string> = string,
@@ -76,9 +75,6 @@ export type ResolveMilestoneInstruction<
       TAccountCampaign extends string
         ? WritableAccount<TAccountCampaign>
         : TAccountCampaign,
-      TAccountProposal extends string
-        ? ReadonlyAccount<TAccountProposal>
-        : TAccountProposal,
       TAccountQuoteMint extends string
         ? ReadonlyAccount<TAccountQuoteMint>
         : TAccountQuoteMint,
@@ -130,7 +126,6 @@ export function getResolveMilestoneInstructionDataCodec(): FixedSizeCodec<
 export type ResolveMilestoneAsyncInput<
   TAccountCaller extends InstructionSignerInput = InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput = InstructionAccountInput,
-  TAccountProposal extends InstructionAccountInput = InstructionAccountInput,
   TAccountQuoteMint extends InstructionAccountInput = InstructionAccountInput,
   TAccountVault extends InstructionAccountInput = InstructionAccountInput,
   TAccountCreator extends InstructionAccountInput = InstructionAccountInput,
@@ -141,7 +136,6 @@ export type ResolveMilestoneAsyncInput<
 > = {
   caller: TAccountCaller;
   campaign: TAccountCampaign;
-  proposal: TAccountProposal;
   quoteMint: TAccountQuoteMint;
   vault?: TAccountVault;
   creator: TAccountCreator;
@@ -152,7 +146,6 @@ export type ResolveMilestoneAsyncInput<
 export async function getResolveMilestoneInstructionAsync<
   TAccountCaller extends InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput,
-  TAccountProposal extends InstructionAccountInput,
   TAccountQuoteMint extends InstructionAccountInput,
   TAccountVault extends InstructionAccountInput,
   TAccountCreator extends InstructionAccountInput,
@@ -163,7 +156,6 @@ export async function getResolveMilestoneInstructionAsync<
   input: ResolveMilestoneAsyncInput<
     TAccountCaller,
     TAccountCampaign,
-    TAccountProposal,
     TAccountQuoteMint,
     TAccountVault,
     TAccountCreator,
@@ -181,10 +173,6 @@ export async function getResolveMilestoneInstructionAsync<
     ResolvedInstructionAccountMeta<
       TAccountCampaign,
       InstructionAccountInputAddress<TAccountCampaign>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountProposal,
-      InstructionAccountInputAddress<TAccountProposal>
     >,
     ResolvedInstructionAccountMeta<
       TAccountQuoteMint,
@@ -221,11 +209,6 @@ export async function getResolveMilestoneInstructionAsync<
       value: input.campaign ?? null,
       isSigner: false,
       isWritable: true,
-    },
-    proposal: {
-      value: input.proposal ?? null,
-      isSigner: false,
-      isWritable: false,
     },
     quoteMint: {
       value: input.quoteMint ?? null,
@@ -305,7 +288,6 @@ export async function getResolveMilestoneInstructionAsync<
     accounts: [
       getAccountMeta("caller", accounts.caller),
       getAccountMeta("campaign", accounts.campaign),
-      getAccountMeta("proposal", accounts.proposal),
       getAccountMeta("quoteMint", accounts.quoteMint),
       getAccountMeta("vault", accounts.vault),
       getAccountMeta("creator", accounts.creator),
@@ -323,10 +305,6 @@ export async function getResolveMilestoneInstructionAsync<
     ResolvedInstructionAccountMeta<
       TAccountCampaign,
       InstructionAccountInputAddress<TAccountCampaign>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountProposal,
-      InstructionAccountInputAddress<TAccountProposal>
     >,
     ResolvedInstructionAccountMeta<
       TAccountQuoteMint,
@@ -354,7 +332,6 @@ export async function getResolveMilestoneInstructionAsync<
 export type ResolveMilestoneInput<
   TAccountCaller extends InstructionSignerInput = InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput = InstructionAccountInput,
-  TAccountProposal extends InstructionAccountInput = InstructionAccountInput,
   TAccountQuoteMint extends InstructionAccountInput = InstructionAccountInput,
   TAccountVault extends InstructionAccountInput = InstructionAccountInput,
   TAccountCreator extends InstructionAccountInput = InstructionAccountInput,
@@ -365,7 +342,6 @@ export type ResolveMilestoneInput<
 > = {
   caller: TAccountCaller;
   campaign: TAccountCampaign;
-  proposal: TAccountProposal;
   quoteMint: TAccountQuoteMint;
   vault: TAccountVault;
   creator: TAccountCreator;
@@ -376,7 +352,6 @@ export type ResolveMilestoneInput<
 export function getResolveMilestoneInstruction<
   TAccountCaller extends InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput,
-  TAccountProposal extends InstructionAccountInput,
   TAccountQuoteMint extends InstructionAccountInput,
   TAccountVault extends InstructionAccountInput,
   TAccountCreator extends InstructionAccountInput,
@@ -387,7 +362,6 @@ export function getResolveMilestoneInstruction<
   input: ResolveMilestoneInput<
     TAccountCaller,
     TAccountCampaign,
-    TAccountProposal,
     TAccountQuoteMint,
     TAccountVault,
     TAccountCreator,
@@ -404,10 +378,6 @@ export function getResolveMilestoneInstruction<
   ResolvedInstructionAccountMeta<
     TAccountCampaign,
     InstructionAccountInputAddress<TAccountCampaign>
-  >,
-  ResolvedInstructionAccountMeta<
-    TAccountProposal,
-    InstructionAccountInputAddress<TAccountProposal>
   >,
   ResolvedInstructionAccountMeta<
     TAccountQuoteMint,
@@ -443,11 +413,6 @@ export function getResolveMilestoneInstruction<
       value: input.campaign ?? null,
       isSigner: false,
       isWritable: true,
-    },
-    proposal: {
-      value: input.proposal ?? null,
-      isSigner: false,
-      isWritable: false,
     },
     quoteMint: {
       value: input.quoteMint ?? null,
@@ -486,7 +451,6 @@ export function getResolveMilestoneInstruction<
     accounts: [
       getAccountMeta("caller", accounts.caller),
       getAccountMeta("campaign", accounts.campaign),
-      getAccountMeta("proposal", accounts.proposal),
       getAccountMeta("quoteMint", accounts.quoteMint),
       getAccountMeta("vault", accounts.vault),
       getAccountMeta("creator", accounts.creator),
@@ -504,10 +468,6 @@ export function getResolveMilestoneInstruction<
     ResolvedInstructionAccountMeta<
       TAccountCampaign,
       InstructionAccountInputAddress<TAccountCampaign>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountProposal,
-      InstructionAccountInputAddress<TAccountProposal>
     >,
     ResolvedInstructionAccountMeta<
       TAccountQuoteMint,
@@ -540,12 +500,11 @@ export type ParsedResolveMilestoneInstruction<
   accounts: {
     caller: TAccountMetas[0];
     campaign: TAccountMetas[1];
-    proposal: TAccountMetas[2];
-    quoteMint: TAccountMetas[3];
-    vault: TAccountMetas[4];
-    creator: TAccountMetas[5];
-    creatorToken: TAccountMetas[6];
-    tokenProgram: TAccountMetas[7];
+    quoteMint: TAccountMetas[2];
+    vault: TAccountMetas[3];
+    creator: TAccountMetas[4];
+    creatorToken: TAccountMetas[5];
+    tokenProgram: TAccountMetas[6];
   };
   data: ResolveMilestoneInstructionData;
 };
@@ -558,12 +517,12 @@ export function parseResolveMilestoneInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedResolveMilestoneInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 8) {
+  if (instruction.accounts.length < 7) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 8,
+        expectedAccountMetas: 7,
       },
     );
   }
@@ -578,7 +537,6 @@ export function parseResolveMilestoneInstruction<
     accounts: {
       caller: getNextAccount(),
       campaign: getNextAccount(),
-      proposal: getNextAccount(),
       quoteMint: getNextAccount(),
       vault: getNextAccount(),
       creator: getNextAccount(),

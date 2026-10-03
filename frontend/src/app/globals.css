@@ -50,25 +50,35 @@ input[type="text"], .lookup input, select {
 .lookup button, .primary {
   border: 0; border-radius: .55rem; background: #1f5baa; color: white; padding: .8rem 1rem; white-space: nowrap;
 }
-.market-shell { min-height: 100vh; max-width: 58rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
+.campaign-shell { min-height: 100vh; max-width: 58rem; margin: 0 auto; padding: 2rem 1rem 4rem; }
 .back-link { display: inline-block; margin-bottom: 1.5rem; color: #1f5baa; text-decoration: none; }
-.trade-card { background: #fff; border: 1px solid #dce2e9; border-radius: 1rem; padding: clamp(1.25rem, 3vw, 2rem); }
-.trade-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-.trade-header h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); }
+.campaign-card { background: #fff; border: 1px solid #dce2e9; border-radius: 1rem; padding: clamp(1.25rem, 3vw, 2rem); }
+.campaign-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.campaign-header h1 { font-size: clamp(1.8rem, 4vw, 2.6rem); }
 .muted { color: #526071; line-height: 1.5; }
 .small { font-size: .9rem; }
 code { overflow-wrap: anywhere; }
-.market-details { display: grid; gap: .55rem; padding: 1rem; border-radius: .7rem; background: #f4f7fb; }
-.trade-form { display: grid; gap: 1.3rem; margin-top: 1.8rem; }
+.campaign-details { display: grid; gap: .55rem; padding: 1rem; border-radius: .7rem; background: #f4f7fb; }
 fieldset { display: flex; gap: 1.5rem; border: 1px solid #dce2e9; border-radius: .6rem; padding: .8rem 1rem 1rem; }
 fieldset label { display: inline-flex; align-items: center; gap: .35rem; }
 .field { display: grid; gap: .45rem; }
 .checkbox { display: flex; align-items: flex-start; gap: .6rem; }
 .primary { width: 100%; padding: 1rem; font-weight: 700; }
 .primary:disabled { background: #9aa7b7; cursor: not-allowed; }
-.trade-message { padding: .85rem 1rem; background: #eef4ff; border-radius: .55rem; }
-.redeem-box { margin-top: 1.5rem; padding: 1rem; border: 1px solid #dce2e9; border-radius: .7rem; }
+.campaign-message { padding: .85rem 1rem; background: #eef4ff; border-radius: .55rem; }
+.section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #dce2e9; }
+.section h2 { margin: 0 0 .8rem; }
+.section h3 { margin: 1rem 0 .5rem; }
+.campaign-form { display: grid; gap: 1rem; margin-top: 1.5rem; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.milestone-row { padding: 1rem; border: 1px solid #dce2e9; border-radius: .6rem; }
+.button-row { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; }
+.button-row button, .section > button { padding: .65rem 1rem; border: 1px solid #b9c5d1; border-radius: .55rem; background: white; }
+.milestone-list { display: grid; gap: .85rem; padding-left: 1.4rem; }
+.field input { width: 100%; padding: .78rem .85rem; border: 1px solid #b9c5d1; border-radius: .55rem; }
+.card { width: min(100%, 52rem); }
 @media (max-width: 600px) {
-  .lookup-row, .trade-header { flex-direction: column; }
+  .lookup-row, .campaign-header { flex-direction: column; }
+  .form-grid { grid-template-columns: 1fr; }
   .lookup button { width: 100%; }
 }

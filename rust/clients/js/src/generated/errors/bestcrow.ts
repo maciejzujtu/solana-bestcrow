@@ -34,7 +34,7 @@ export const BESTCROW_ERROR__WRONG_PARTICIPANT = 0x1777; // 6007
 export const BESTCROW_ERROR__DEADLINE_PASSED = 0x1778; // 6008
 /** DeadlineOpen: Deadline has not passed */
 export const BESTCROW_ERROR__DEADLINE_OPEN = 0x1779; // 6009
-/** WrongMilestone: Wrong milestone or MetaDAO proposal */
+/** WrongMilestone: Wrong milestone */
 export const BESTCROW_ERROR__WRONG_MILESTONE = 0x177a; // 6010
 /** Arithmetic: Arithmetic overflow */
 export const BESTCROW_ERROR__ARITHMETIC = 0x177b; // 6011
@@ -50,16 +50,12 @@ export const BESTCROW_ERROR__REFUNDS_OUTSTANDING = 0x177f; // 6015
 export const BESTCROW_ERROR__EMPTY_EVIDENCE = 0x1780; // 6016
 /** ReceiptStillNeeded: Account is still needed for funding or refund */
 export const BESTCROW_ERROR__RECEIPT_STILL_NEEDED = 0x1781; // 6017
-/** InvalidMetaDaoAccount: MetaDAO account has an unexpected owner, discriminator, or layout */
-export const BESTCROW_ERROR__INVALID_META_DAO_ACCOUNT = 0x1782; // 6018
-/** InvalidMarketBinding: MetaDAO DAO and proposal are not bound to this campaign */
-export const BESTCROW_ERROR__INVALID_MARKET_BINDING = 0x1783; // 6019
-/** InvalidProposalState: MetaDAO proposal is not in the required state */
-export const BESTCROW_ERROR__INVALID_PROPOSAL_STATE = 0x1784; // 6020
-/** MarketStillLive: MetaDAO market is still live */
-export const BESTCROW_ERROR__MARKET_STILL_LIVE = 0x1785; // 6021
+/** VoteClosed: Voting period is closed */
+export const BESTCROW_ERROR__VOTE_CLOSED = 0x1782; // 6018
+/** VoteOpen: Voting period is still open */
+export const BESTCROW_ERROR__VOTE_OPEN = 0x1783; // 6019
 /** InvalidTokenAccount: Token mint, vault, or recipient account does not match the campaign */
-export const BESTCROW_ERROR__INVALID_TOKEN_ACCOUNT = 0x1786; // 6022
+export const BESTCROW_ERROR__INVALID_TOKEN_ACCOUNT = 0x1784; // 6020
 
 export type BestcrowError =
   | typeof BESTCROW_ERROR__ALREADY_CLAIMED
@@ -72,16 +68,14 @@ export type BestcrowError =
   | typeof BESTCROW_ERROR__GOAL_EXCEEDED
   | typeof BESTCROW_ERROR__INSUFFICIENT_ESCROW
   | typeof BESTCROW_ERROR__INVALID_CAMPAIGN_STATE
-  | typeof BESTCROW_ERROR__INVALID_MARKET_BINDING
-  | typeof BESTCROW_ERROR__INVALID_META_DAO_ACCOUNT
   | typeof BESTCROW_ERROR__INVALID_MILESTONE_STATE
-  | typeof BESTCROW_ERROR__INVALID_PROPOSAL_STATE
   | typeof BESTCROW_ERROR__INVALID_TERMS
   | typeof BESTCROW_ERROR__INVALID_TOKEN_ACCOUNT
-  | typeof BESTCROW_ERROR__MARKET_STILL_LIVE
   | typeof BESTCROW_ERROR__RECEIPT_STILL_NEEDED
   | typeof BESTCROW_ERROR__REFUNDS_OUTSTANDING
   | typeof BESTCROW_ERROR__REFUND_UNAVAILABLE
+  | typeof BESTCROW_ERROR__VOTE_CLOSED
+  | typeof BESTCROW_ERROR__VOTE_OPEN
   | typeof BESTCROW_ERROR__WRONG_MILESTONE
   | typeof BESTCROW_ERROR__WRONG_PARTICIPANT
   | typeof BESTCROW_ERROR__ZERO_AMOUNT;
@@ -99,17 +93,15 @@ if (process.env["NODE_ENV"] !== "production") {
     [BESTCROW_ERROR__GOAL_EXCEEDED]: `Campaign goal would be exceeded`,
     [BESTCROW_ERROR__INSUFFICIENT_ESCROW]: `Escrow balance is insufficient`,
     [BESTCROW_ERROR__INVALID_CAMPAIGN_STATE]: `Campaign is not in the required state`,
-    [BESTCROW_ERROR__INVALID_MARKET_BINDING]: `MetaDAO DAO and proposal are not bound to this campaign`,
-    [BESTCROW_ERROR__INVALID_META_DAO_ACCOUNT]: `MetaDAO account has an unexpected owner, discriminator, or layout`,
     [BESTCROW_ERROR__INVALID_MILESTONE_STATE]: `Milestone is not in the required state`,
-    [BESTCROW_ERROR__INVALID_PROPOSAL_STATE]: `MetaDAO proposal is not in the required state`,
     [BESTCROW_ERROR__INVALID_TERMS]: `Invalid campaign terms`,
     [BESTCROW_ERROR__INVALID_TOKEN_ACCOUNT]: `Token mint, vault, or recipient account does not match the campaign`,
-    [BESTCROW_ERROR__MARKET_STILL_LIVE]: `MetaDAO market is still live`,
     [BESTCROW_ERROR__RECEIPT_STILL_NEEDED]: `Account is still needed for funding or refund`,
     [BESTCROW_ERROR__REFUNDS_OUTSTANDING]: `Refunds are still outstanding`,
     [BESTCROW_ERROR__REFUND_UNAVAILABLE]: `Refund is not available`,
-    [BESTCROW_ERROR__WRONG_MILESTONE]: `Wrong milestone or MetaDAO proposal`,
+    [BESTCROW_ERROR__VOTE_CLOSED]: `Voting period is closed`,
+    [BESTCROW_ERROR__VOTE_OPEN]: `Voting period is still open`,
+    [BESTCROW_ERROR__WRONG_MILESTONE]: `Wrong milestone`,
     [BESTCROW_ERROR__WRONG_PARTICIPANT]: `Wrong creator or backer account`,
     [BESTCROW_ERROR__ZERO_AMOUNT]: `Amount must be positive`,
   };

@@ -64,12 +64,9 @@ export type CreateCampaignInstruction<
   TProgram extends string = typeof BESTCROW_PROGRAM_ADDRESS,
   TAccountCreator extends string | AccountMeta<string> = string,
   TAccountCampaign extends string | AccountMeta<string> = string,
-  TAccountDaoBinding extends string | AccountMeta<string> = string,
   TAccountQuoteMint extends string | AccountMeta<string> = string,
-  TAccountBaseMint extends string | AccountMeta<string> = string,
   TAccountVault extends string | AccountMeta<string> = string,
   TAccountCreatorToken extends string | AccountMeta<string> = string,
-  TAccountMetaDao extends string | AccountMeta<string> = string,
   TAccountTokenProgram extends string | AccountMeta<string> =
     "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
   TAccountAssociatedTokenProgram extends string | AccountMeta<string> =
@@ -88,24 +85,15 @@ export type CreateCampaignInstruction<
       TAccountCampaign extends string
         ? WritableAccount<TAccountCampaign>
         : TAccountCampaign,
-      TAccountDaoBinding extends string
-        ? WritableAccount<TAccountDaoBinding>
-        : TAccountDaoBinding,
       TAccountQuoteMint extends string
         ? ReadonlyAccount<TAccountQuoteMint>
         : TAccountQuoteMint,
-      TAccountBaseMint extends string
-        ? ReadonlyAccount<TAccountBaseMint>
-        : TAccountBaseMint,
       TAccountVault extends string
         ? WritableAccount<TAccountVault>
         : TAccountVault,
       TAccountCreatorToken extends string
         ? WritableAccount<TAccountCreatorToken>
         : TAccountCreatorToken,
-      TAccountMetaDao extends string
-        ? ReadonlyAccount<TAccountMetaDao>
-        : TAccountMetaDao,
       TAccountTokenProgram extends string
         ? ReadonlyAccount<TAccountTokenProgram>
         : TAccountTokenProgram,
@@ -158,13 +146,10 @@ export function getCreateCampaignInstructionDataCodec(): Codec<
 export type CreateCampaignAsyncInput<
   TAccountCreator extends InstructionSignerInput = InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput = InstructionAccountInput,
-  TAccountDaoBinding extends InstructionAccountInput = InstructionAccountInput,
   TAccountQuoteMint extends InstructionAccountInput = InstructionAccountInput,
-  TAccountBaseMint extends InstructionAccountInput = InstructionAccountInput,
   TAccountVault extends InstructionAccountInput = InstructionAccountInput,
   TAccountCreatorToken extends InstructionAccountInput =
     InstructionAccountInput,
-  TAccountMetaDao extends InstructionAccountInput = InstructionAccountInput,
   TAccountTokenProgram extends InstructionAccountInput =
     InstructionAccountInput,
   TAccountAssociatedTokenProgram extends InstructionAccountInput =
@@ -174,12 +159,9 @@ export type CreateCampaignAsyncInput<
 > = {
   creator: TAccountCreator;
   campaign: TAccountCampaign;
-  daoBinding?: TAccountDaoBinding;
   quoteMint: TAccountQuoteMint;
-  baseMint: TAccountBaseMint;
   vault?: TAccountVault;
   creatorToken?: TAccountCreatorToken;
-  metaDao: TAccountMetaDao;
   tokenProgram?: TAccountTokenProgram;
   associatedTokenProgram?: TAccountAssociatedTokenProgram;
   systemProgram?: TAccountSystemProgram;
@@ -189,12 +171,9 @@ export type CreateCampaignAsyncInput<
 export async function getCreateCampaignInstructionAsync<
   TAccountCreator extends InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput,
-  TAccountDaoBinding extends InstructionAccountInput,
   TAccountQuoteMint extends InstructionAccountInput,
-  TAccountBaseMint extends InstructionAccountInput,
   TAccountVault extends InstructionAccountInput,
   TAccountCreatorToken extends InstructionAccountInput,
-  TAccountMetaDao extends InstructionAccountInput,
   TAccountTokenProgram extends InstructionAccountInput,
   TAccountAssociatedTokenProgram extends InstructionAccountInput,
   TAccountSystemProgram extends InstructionAccountInput,
@@ -203,12 +182,9 @@ export async function getCreateCampaignInstructionAsync<
   input: CreateCampaignAsyncInput<
     TAccountCreator,
     TAccountCampaign,
-    TAccountDaoBinding,
     TAccountQuoteMint,
-    TAccountBaseMint,
     TAccountVault,
     TAccountCreatorToken,
-    TAccountMetaDao,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -226,16 +202,8 @@ export async function getCreateCampaignInstructionAsync<
       InstructionAccountInputAddress<TAccountCampaign>
     >,
     ResolvedInstructionAccountMeta<
-      TAccountDaoBinding,
-      InstructionAccountInputAddress<TAccountDaoBinding>
-    >,
-    ResolvedInstructionAccountMeta<
       TAccountQuoteMint,
       InstructionAccountInputAddress<TAccountQuoteMint>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountBaseMint,
-      InstructionAccountInputAddress<TAccountBaseMint>
     >,
     ResolvedInstructionAccountMeta<
       TAccountVault,
@@ -244,10 +212,6 @@ export async function getCreateCampaignInstructionAsync<
     ResolvedInstructionAccountMeta<
       TAccountCreatorToken,
       InstructionAccountInputAddress<TAccountCreatorToken>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountMetaDao,
-      InstructionAccountInputAddress<TAccountMetaDao>
     >,
     ResolvedInstructionAccountMeta<
       TAccountTokenProgram,
@@ -277,18 +241,8 @@ export async function getCreateCampaignInstructionAsync<
       isSigner: false,
       isWritable: true,
     },
-    daoBinding: {
-      value: input.daoBinding ?? null,
-      isSigner: false,
-      isWritable: true,
-    },
     quoteMint: {
       value: input.quoteMint ?? null,
-      isSigner: false,
-      isWritable: false,
-    },
-    baseMint: {
-      value: input.baseMint ?? null,
       isSigner: false,
       isWritable: false,
     },
@@ -297,11 +251,6 @@ export async function getCreateCampaignInstructionAsync<
       value: input.creatorToken ?? null,
       isSigner: false,
       isWritable: true,
-    },
-    metaDao: {
-      value: input.metaDao ?? null,
-      isSigner: false,
-      isWritable: false,
     },
     tokenProgram: {
       value: input.tokenProgram ?? null,
@@ -328,22 +277,6 @@ export async function getCreateCampaignInstructionAsync<
   const args = { ...input };
 
   // Resolve default values.
-  if (!accounts.daoBinding.value) {
-    accounts.daoBinding.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(
-          new Uint8Array([100, 97, 111, 45, 98, 105, 110, 100, 105, 110, 103]),
-        ),
-        getAddressEncoder().encode(
-          getAddressFromResolvedInstructionAccount(
-            "metaDao",
-            accounts.metaDao.value,
-          ),
-        ),
-      ],
-    });
-  }
   if (!accounts.vault.value) {
     accounts.vault.value = await getProgramDerivedAddress({
       programAddress,
@@ -402,12 +335,9 @@ export async function getCreateCampaignInstructionAsync<
     accounts: [
       getAccountMeta("creator", accounts.creator),
       getAccountMeta("campaign", accounts.campaign),
-      getAccountMeta("daoBinding", accounts.daoBinding),
       getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseMint", accounts.baseMint),
       getAccountMeta("vault", accounts.vault),
       getAccountMeta("creatorToken", accounts.creatorToken),
-      getAccountMeta("metaDao", accounts.metaDao),
       getAccountMeta("tokenProgram", accounts.tokenProgram),
       getAccountMeta("associatedTokenProgram", accounts.associatedTokenProgram),
       getAccountMeta("systemProgram", accounts.systemProgram),
@@ -427,16 +357,8 @@ export async function getCreateCampaignInstructionAsync<
       InstructionAccountInputAddress<TAccountCampaign>
     >,
     ResolvedInstructionAccountMeta<
-      TAccountDaoBinding,
-      InstructionAccountInputAddress<TAccountDaoBinding>
-    >,
-    ResolvedInstructionAccountMeta<
       TAccountQuoteMint,
       InstructionAccountInputAddress<TAccountQuoteMint>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountBaseMint,
-      InstructionAccountInputAddress<TAccountBaseMint>
     >,
     ResolvedInstructionAccountMeta<
       TAccountVault,
@@ -445,10 +367,6 @@ export async function getCreateCampaignInstructionAsync<
     ResolvedInstructionAccountMeta<
       TAccountCreatorToken,
       InstructionAccountInputAddress<TAccountCreatorToken>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountMetaDao,
-      InstructionAccountInputAddress<TAccountMetaDao>
     >,
     ResolvedInstructionAccountMeta<
       TAccountTokenProgram,
@@ -468,13 +386,10 @@ export async function getCreateCampaignInstructionAsync<
 export type CreateCampaignInput<
   TAccountCreator extends InstructionSignerInput = InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput = InstructionAccountInput,
-  TAccountDaoBinding extends InstructionAccountInput = InstructionAccountInput,
   TAccountQuoteMint extends InstructionAccountInput = InstructionAccountInput,
-  TAccountBaseMint extends InstructionAccountInput = InstructionAccountInput,
   TAccountVault extends InstructionAccountInput = InstructionAccountInput,
   TAccountCreatorToken extends InstructionAccountInput =
     InstructionAccountInput,
-  TAccountMetaDao extends InstructionAccountInput = InstructionAccountInput,
   TAccountTokenProgram extends InstructionAccountInput =
     InstructionAccountInput,
   TAccountAssociatedTokenProgram extends InstructionAccountInput =
@@ -484,12 +399,9 @@ export type CreateCampaignInput<
 > = {
   creator: TAccountCreator;
   campaign: TAccountCampaign;
-  daoBinding: TAccountDaoBinding;
   quoteMint: TAccountQuoteMint;
-  baseMint: TAccountBaseMint;
   vault: TAccountVault;
   creatorToken: TAccountCreatorToken;
-  metaDao: TAccountMetaDao;
   tokenProgram?: TAccountTokenProgram;
   associatedTokenProgram?: TAccountAssociatedTokenProgram;
   systemProgram?: TAccountSystemProgram;
@@ -499,12 +411,9 @@ export type CreateCampaignInput<
 export function getCreateCampaignInstruction<
   TAccountCreator extends InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput,
-  TAccountDaoBinding extends InstructionAccountInput,
   TAccountQuoteMint extends InstructionAccountInput,
-  TAccountBaseMint extends InstructionAccountInput,
   TAccountVault extends InstructionAccountInput,
   TAccountCreatorToken extends InstructionAccountInput,
-  TAccountMetaDao extends InstructionAccountInput,
   TAccountTokenProgram extends InstructionAccountInput,
   TAccountAssociatedTokenProgram extends InstructionAccountInput,
   TAccountSystemProgram extends InstructionAccountInput,
@@ -513,12 +422,9 @@ export function getCreateCampaignInstruction<
   input: CreateCampaignInput<
     TAccountCreator,
     TAccountCampaign,
-    TAccountDaoBinding,
     TAccountQuoteMint,
-    TAccountBaseMint,
     TAccountVault,
     TAccountCreatorToken,
-    TAccountMetaDao,
     TAccountTokenProgram,
     TAccountAssociatedTokenProgram,
     TAccountSystemProgram
@@ -535,16 +441,8 @@ export function getCreateCampaignInstruction<
     InstructionAccountInputAddress<TAccountCampaign>
   >,
   ResolvedInstructionAccountMeta<
-    TAccountDaoBinding,
-    InstructionAccountInputAddress<TAccountDaoBinding>
-  >,
-  ResolvedInstructionAccountMeta<
     TAccountQuoteMint,
     InstructionAccountInputAddress<TAccountQuoteMint>
-  >,
-  ResolvedInstructionAccountMeta<
-    TAccountBaseMint,
-    InstructionAccountInputAddress<TAccountBaseMint>
   >,
   ResolvedInstructionAccountMeta<
     TAccountVault,
@@ -553,10 +451,6 @@ export function getCreateCampaignInstruction<
   ResolvedInstructionAccountMeta<
     TAccountCreatorToken,
     InstructionAccountInputAddress<TAccountCreatorToken>
-  >,
-  ResolvedInstructionAccountMeta<
-    TAccountMetaDao,
-    InstructionAccountInputAddress<TAccountMetaDao>
   >,
   ResolvedInstructionAccountMeta<
     TAccountTokenProgram,
@@ -585,18 +479,8 @@ export function getCreateCampaignInstruction<
       isSigner: false,
       isWritable: true,
     },
-    daoBinding: {
-      value: input.daoBinding ?? null,
-      isSigner: false,
-      isWritable: true,
-    },
     quoteMint: {
       value: input.quoteMint ?? null,
-      isSigner: false,
-      isWritable: false,
-    },
-    baseMint: {
-      value: input.baseMint ?? null,
       isSigner: false,
       isWritable: false,
     },
@@ -605,11 +489,6 @@ export function getCreateCampaignInstruction<
       value: input.creatorToken ?? null,
       isSigner: false,
       isWritable: true,
-    },
-    metaDao: {
-      value: input.metaDao ?? null,
-      isSigner: false,
-      isWritable: false,
     },
     tokenProgram: {
       value: input.tokenProgram ?? null,
@@ -653,12 +532,9 @@ export function getCreateCampaignInstruction<
     accounts: [
       getAccountMeta("creator", accounts.creator),
       getAccountMeta("campaign", accounts.campaign),
-      getAccountMeta("daoBinding", accounts.daoBinding),
       getAccountMeta("quoteMint", accounts.quoteMint),
-      getAccountMeta("baseMint", accounts.baseMint),
       getAccountMeta("vault", accounts.vault),
       getAccountMeta("creatorToken", accounts.creatorToken),
-      getAccountMeta("metaDao", accounts.metaDao),
       getAccountMeta("tokenProgram", accounts.tokenProgram),
       getAccountMeta("associatedTokenProgram", accounts.associatedTokenProgram),
       getAccountMeta("systemProgram", accounts.systemProgram),
@@ -678,16 +554,8 @@ export function getCreateCampaignInstruction<
       InstructionAccountInputAddress<TAccountCampaign>
     >,
     ResolvedInstructionAccountMeta<
-      TAccountDaoBinding,
-      InstructionAccountInputAddress<TAccountDaoBinding>
-    >,
-    ResolvedInstructionAccountMeta<
       TAccountQuoteMint,
       InstructionAccountInputAddress<TAccountQuoteMint>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountBaseMint,
-      InstructionAccountInputAddress<TAccountBaseMint>
     >,
     ResolvedInstructionAccountMeta<
       TAccountVault,
@@ -696,10 +564,6 @@ export function getCreateCampaignInstruction<
     ResolvedInstructionAccountMeta<
       TAccountCreatorToken,
       InstructionAccountInputAddress<TAccountCreatorToken>
-    >,
-    ResolvedInstructionAccountMeta<
-      TAccountMetaDao,
-      InstructionAccountInputAddress<TAccountMetaDao>
     >,
     ResolvedInstructionAccountMeta<
       TAccountTokenProgram,
@@ -724,15 +588,12 @@ export type ParsedCreateCampaignInstruction<
   accounts: {
     creator: TAccountMetas[0];
     campaign: TAccountMetas[1];
-    daoBinding: TAccountMetas[2];
-    quoteMint: TAccountMetas[3];
-    baseMint: TAccountMetas[4];
-    vault: TAccountMetas[5];
-    creatorToken: TAccountMetas[6];
-    metaDao: TAccountMetas[7];
-    tokenProgram: TAccountMetas[8];
-    associatedTokenProgram: TAccountMetas[9];
-    systemProgram: TAccountMetas[10];
+    quoteMint: TAccountMetas[2];
+    vault: TAccountMetas[3];
+    creatorToken: TAccountMetas[4];
+    tokenProgram: TAccountMetas[5];
+    associatedTokenProgram: TAccountMetas[6];
+    systemProgram: TAccountMetas[7];
   };
   data: CreateCampaignInstructionData;
 };
@@ -745,12 +606,12 @@ export function parseCreateCampaignInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedCreateCampaignInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 11) {
+  if (instruction.accounts.length < 8) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 11,
+        expectedAccountMetas: 8,
       },
     );
   }
@@ -765,12 +626,9 @@ export function parseCreateCampaignInstruction<
     accounts: {
       creator: getNextAccount(),
       campaign: getNextAccount(),
-      daoBinding: getNextAccount(),
       quoteMint: getNextAccount(),
-      baseMint: getNextAccount(),
       vault: getNextAccount(),
       creatorToken: getNextAccount(),
-      metaDao: getNextAccount(),
       tokenProgram: getNextAccount(),
       associatedTokenProgram: getNextAccount(),
       systemProgram: getNextAccount(),

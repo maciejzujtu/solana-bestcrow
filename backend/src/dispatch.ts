@@ -32,7 +32,7 @@ export class KeeperDispatcher {
           const record = await this.chain.getCampaign(action.campaign);
           if (!record) continue;
           const fresh = await this.service.campaignAction(record);
-          if (!fresh || fresh.kind !== action.kind || fresh.proposal !== action.proposal) continue;
+          if (!fresh || fresh.kind !== action.kind) continue;
           const unsigned = await this.service.unsignedAction(record, fresh, this.keeper.publicKey.toBase58());
           const transaction = new Transaction();
           for (const item of unsigned.instructions) transaction.add(InstructionCodec.toWeb3(item));

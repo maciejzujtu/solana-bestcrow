@@ -26,6 +26,7 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type WritableAccount,
@@ -40,19 +41,20 @@ import {
 } from "@solana/program-client-core";
 import { BESTCROW_PROGRAM_ADDRESS } from "../programs";
 
-export const EXPIRE_MILESTONE_DISCRIMINATOR: ReadonlyUint8Array =
-  new Uint8Array([63, 248, 117, 14, 49, 79, 240, 230]);
+export const CLOSE_VOTE_DISCRIMINATOR: ReadonlyUint8Array = new Uint8Array([
+  137, 152, 87, 249, 170, 239, 133, 59,
+]);
 
-export function getExpireMilestoneDiscriminatorBytes(): ReadonlyUint8Array {
-  return fixEncoderSize(getBytesEncoder(), 8).encode(
-    EXPIRE_MILESTONE_DISCRIMINATOR,
-  );
+export function getCloseVoteDiscriminatorBytes(): ReadonlyUint8Array {
+  return fixEncoderSize(getBytesEncoder(), 8).encode(CLOSE_VOTE_DISCRIMINATOR);
 }
 
-export type ExpireMilestoneInstruction<
+export type CloseVoteInstruction<
   TProgram extends string = typeof BESTCROW_PROGRAM_ADDRESS,
   TAccountCaller extends string | AccountMeta<string> = string,
   TAccountCampaign extends string | AccountMeta<string> = string,
+  TAccountWallet extends string | AccountMeta<string> = string,
+  TAccountVote extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -63,57 +65,72 @@ export type ExpireMilestoneInstruction<
             AccountSignerMeta<TAccountCaller>
         : TAccountCaller,
       TAccountCampaign extends string
-        ? WritableAccount<TAccountCampaign>
+        ? ReadonlyAccount<TAccountCampaign>
         : TAccountCampaign,
+      TAccountWallet extends string
+        ? WritableAccount<TAccountWallet>
+        : TAccountWallet,
+      TAccountVote extends string
+        ? WritableAccount<TAccountVote>
+        : TAccountVote,
       ...TRemainingAccounts,
     ]
   >;
 
-export type ExpireMilestoneInstructionData = {
-  discriminator: ReadonlyUint8Array;
-};
+export type CloseVoteInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type ExpireMilestoneInstructionDataArgs = {};
+export type CloseVoteInstructionDataArgs = {};
 
-export function getExpireMilestoneInstructionDataEncoder(): FixedSizeEncoder<ExpireMilestoneInstructionDataArgs> {
+export function getCloseVoteInstructionDataEncoder(): FixedSizeEncoder<CloseVoteInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: EXPIRE_MILESTONE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CLOSE_VOTE_DISCRIMINATOR }),
   );
 }
 
-export function getExpireMilestoneInstructionDataDecoder(): FixedSizeDecoder<ExpireMilestoneInstructionData> {
+export function getCloseVoteInstructionDataDecoder(): FixedSizeDecoder<CloseVoteInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getExpireMilestoneInstructionDataCodec(): FixedSizeCodec<
-  ExpireMilestoneInstructionDataArgs,
-  ExpireMilestoneInstructionData
+export function getCloseVoteInstructionDataCodec(): FixedSizeCodec<
+  CloseVoteInstructionDataArgs,
+  CloseVoteInstructionData
 > {
   return combineCodec(
-    getExpireMilestoneInstructionDataEncoder(),
-    getExpireMilestoneInstructionDataDecoder(),
+    getCloseVoteInstructionDataEncoder(),
+    getCloseVoteInstructionDataDecoder(),
   );
 }
 
-export type ExpireMilestoneInput<
+export type CloseVoteInput<
   TAccountCaller extends InstructionSignerInput = InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput = InstructionAccountInput,
+  TAccountWallet extends InstructionAccountInput = InstructionAccountInput,
+  TAccountVote extends InstructionAccountInput = InstructionAccountInput,
 > = {
   caller: TAccountCaller;
   campaign: TAccountCampaign;
+  wallet: TAccountWallet;
+  vote: TAccountVote;
 };
 
-export function getExpireMilestoneInstruction<
+export function getCloseVoteInstruction<
   TAccountCaller extends InstructionSignerInput,
   TAccountCampaign extends InstructionAccountInput,
+  TAccountWallet extends InstructionAccountInput,
+  TAccountVote extends InstructionAccountInput,
   TProgramAddress extends Address = typeof BESTCROW_PROGRAM_ADDRESS,
 >(
-  input: ExpireMilestoneInput<TAccountCaller, TAccountCampaign>,
+  input: CloseVoteInput<
+    TAccountCaller,
+    TAccountCampaign,
+    TAccountWallet,
+    TAccountVote
+  >,
   config?: { programAddress?: TProgramAddress },
-): ExpireMilestoneInstruction<
+): CloseVoteInstruction<
   TProgramAddress,
   ResolvedInstructionAccountMeta<
     TAccountCaller,
@@ -122,6 +139,14 @@ export function getExpireMilestoneInstruction<
   ResolvedInstructionAccountMeta<
     TAccountCampaign,
     InstructionAccountInputAddress<TAccountCampaign>
+  >,
+  ResolvedInstructionAccountMeta<
+    TAccountWallet,
+    InstructionAccountInputAddress<TAccountWallet>
+  >,
+  ResolvedInstructionAccountMeta<
+    TAccountVote,
+    InstructionAccountInputAddress<TAccountVote>
   >
 > {
   // Program address.
@@ -136,8 +161,10 @@ export function getExpireMilestoneInstruction<
     campaign: {
       value: input.campaign ?? null,
       isSigner: false,
-      isWritable: true,
+      isWritable: false,
     },
+    wallet: { value: input.wallet ?? null, isSigner: false, isWritable: true },
+    vote: { value: input.vote ?? null, isSigner: false, isWritable: true },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -148,10 +175,12 @@ export function getExpireMilestoneInstruction<
     accounts: [
       getAccountMeta("caller", accounts.caller),
       getAccountMeta("campaign", accounts.campaign),
+      getAccountMeta("wallet", accounts.wallet),
+      getAccountMeta("vote", accounts.vote),
     ],
-    data: getExpireMilestoneInstructionDataEncoder().encode({}),
+    data: getCloseVoteInstructionDataEncoder().encode({}),
     programAddress,
-  } as ExpireMilestoneInstruction<
+  } as CloseVoteInstruction<
     TProgramAddress,
     ResolvedInstructionAccountMeta<
       TAccountCaller,
@@ -160,11 +189,19 @@ export function getExpireMilestoneInstruction<
     ResolvedInstructionAccountMeta<
       TAccountCampaign,
       InstructionAccountInputAddress<TAccountCampaign>
+    >,
+    ResolvedInstructionAccountMeta<
+      TAccountWallet,
+      InstructionAccountInputAddress<TAccountWallet>
+    >,
+    ResolvedInstructionAccountMeta<
+      TAccountVote,
+      InstructionAccountInputAddress<TAccountVote>
     >
   >);
 }
 
-export type ParsedExpireMilestoneInstruction<
+export type ParsedCloseVoteInstruction<
   TProgram extends string = typeof BESTCROW_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -172,24 +209,26 @@ export type ParsedExpireMilestoneInstruction<
   accounts: {
     caller: TAccountMetas[0];
     campaign: TAccountMetas[1];
+    wallet: TAccountMetas[2];
+    vote: TAccountMetas[3];
   };
-  data: ExpireMilestoneInstructionData;
+  data: CloseVoteInstructionData;
 };
 
-export function parseExpireMilestoneInstruction<
+export function parseCloseVoteInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedExpireMilestoneInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 2) {
+): ParsedCloseVoteInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 4) {
     throw new SolanaError(
       SOLANA_ERROR__PROGRAM_CLIENTS__INSUFFICIENT_ACCOUNT_METAS,
       {
         actualAccountMetas: instruction.accounts.length,
-        expectedAccountMetas: 2,
+        expectedAccountMetas: 4,
       },
     );
   }
@@ -201,7 +240,12 @@ export function parseExpireMilestoneInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: { caller: getNextAccount(), campaign: getNextAccount() },
-    data: getExpireMilestoneInstructionDataDecoder().decode(instruction.data),
+    accounts: {
+      caller: getNextAccount(),
+      campaign: getNextAccount(),
+      wallet: getNextAccount(),
+      vote: getNextAccount(),
+    },
+    data: getCloseVoteInstructionDataDecoder().decode(instruction.data),
   };
 }

@@ -7,8 +7,6 @@ pub struct CampaignCreated {
     pub goal: u64,
     pub funding_deadline: i64,
     pub quote_mint: Pubkey,
-    pub base_mint: Pubkey,
-    pub meta_dao: Pubkey,
 }
 
 #[event]
@@ -29,8 +27,16 @@ pub struct CampaignFinalized {
 pub struct EvidenceSubmitted {
     pub campaign: Pubkey,
     pub milestone_index: u8,
-    pub proposal: Pubkey,
     pub evidence_hash: [u8; 32],
+}
+
+#[event]
+pub struct VoteCast {
+    pub campaign: Pubkey,
+    pub milestone_index: u8,
+    pub wallet: Pubkey,
+    pub approve: bool,
+    pub weight: u64,
 }
 
 #[event]
