@@ -2,6 +2,7 @@ pub mod constants;
 pub mod error;
 pub mod instructions;
 pub mod state;
+pub mod v2;
 
 use anchor_lang::prelude::*;
 pub(crate) use instructions::claim_refund::__client_accounts_claim_refund;
@@ -24,6 +25,7 @@ pub(crate) use instructions::voting::__client_accounts_submit_evidence;
 pub(crate) use instructions::voting::__client_accounts_vote_milestone;
 pub use instructions::*;
 pub use state::*;
+pub use v2::*;
 
 declare_id!("74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG");
 
@@ -127,4 +129,21 @@ pub mod charity_vault {
     pub fn claim_bond(ctx: Context<ClaimBond>) -> Result<()> {
         settle::claim_bond(ctx)
     }
+
+    pub fn initialize_protocol_config_v2(ctx: Context<InitializeProtocolConfigV2>, treasury: Pubkey) -> Result<()> {
+        v2::initialize_protocol_config_v2(ctx, treasury)
+    }
+    pub fn create_campaign_draft_v2(ctx: Context<CreateCampaignDraftV2>, campaign_id: u64, goal: u64, funding_deadline: i64, terms_hash: [u8; 32], terms_uri: Vec<u8>) -> Result<()> {
+        v2::create_campaign_draft_v2(ctx, campaign_id, goal, funding_deadline, terms_hash, terms_uri)
+    }
+    pub fn add_tranche_v2(ctx: Context<AddTrancheV2>, index: u8, share_bps: u16, proof_deadline: i64) -> Result<()> {
+        v2::add_tranche_v2(ctx, index, share_bps, proof_deadline)
+    }
+    pub fn seal_terms_v2<'info>(ctx: Context<'info, SealTermsV2<'info>>) -> Result<()> {
+        v2::seal_terms_v2(ctx)
+    }
+    pub fn pledge_v2(ctx: Context<PledgeV2>, amount: u64) -> Result<()> { v2::pledge_v2(ctx, amount) }
+    pub fn cancel_pledge_v2(ctx: Context<CancelPledgeV2>) -> Result<()> { v2::cancel_pledge_v2(ctx) }
+    pub fn finalize_funding_v2(ctx: Context<FinalizeFundingV2>) -> Result<()> { v2::finalize_funding_v2(ctx) }
+    pub fn claim_refund_v2(ctx: Context<ClaimRefundV2>) -> Result<()> { v2::claim_refund_v2(ctx) }
 }

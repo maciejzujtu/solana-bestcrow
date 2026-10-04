@@ -68,4 +68,36 @@ pub enum CharityVaultError {
     NoBond,
     #[msg("Staged campaigns release funds through milestones")]
     StagedCampaignUsesMilestones,
+    #[msg("Protocol configuration already exists")]
+    ProtocolConfigExists,
+    #[msg("Campaign draft is not editable")]
+    DraftNotEditable,
+    #[msg("Campaign terms are not sealed")]
+    TermsNotSealed,
+    #[msg("Campaign terms are already sealed")]
+    TermsAlreadySealed,
+    #[msg("Funding duration must be between seven and 183 days")]
+    InvalidFundingDuration,
+    #[msg("A campaign must contain between two and five tranches")]
+    InvalidTrancheCount,
+    #[msg("Tranche share must be positive and no more than 50 percent")]
+    InvalidTrancheShare,
+    #[msg("Tranche shares must sum to 100 percent")]
+    TrancheSharesDoNotSum,
+    #[msg("The tranche index is not sequential")]
+    InvalidTrancheIndex,
+    #[msg("The protocol fee is invalid")]
+    InvalidProtocolFee,
+    #[msg("The protocol treasury is invalid")]
+    InvalidTreasury,
+    #[msg("The pledge has already been cancelled")]
+    PledgeAlreadyCancelled,
+    #[msg("The pledge cannot be cancelled after funding")]
+    PledgeCancellationClosed,
+    #[msg("No pledge is available")]
+    NoPledge,
+    #[msg("The campaign is not in V2 funding")]
+    CampaignNotFunding,
+    #[msg("The campaign has already been finalized")]
+    CampaignAlreadyFinalized,
 }
