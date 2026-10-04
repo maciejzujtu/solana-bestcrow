@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { address, type Address } from '@solana/kit';
 import { useConnectedWallet } from '@solana/kit-plugin-wallet/react';
 
@@ -17,6 +18,7 @@ import {
   campaignV2Pda,
   canonicalizeTermsV2,
   createCampaignDraftV2Ix,
+  DEVNET_MOCK_MODE,
   explorerTransactionUrl,
   fetchCampaignContentV2,
   formatSolV2,
@@ -35,6 +37,7 @@ import {
 import { sendV2Transaction } from '../../lib/send-v2-transaction';
 import { client } from '../../providers';
 import { withRpcRetry } from '../../lib/rpc-retry';
+import { saveMockCampaignV2 } from '../../lib/mock-campaigns-v2';
 
 type TrancheDraft = { title: string; share: string; proofDays: string; recipients: string };
 type FormDraft = {
@@ -59,6 +62,7 @@ type PreparedDraft = {
   estimatedCost: bigint;
   walletBalance: bigint;
   rent: { campaign: bigint; tranche: bigint; vault: bigint };
+  mock: boolean;
 };
 
 const defaultTranche = (index: number): TrancheDraft => ({
@@ -130,6 +134,7 @@ function saveDraft(wallet: string, draft: FormDraft): void {
 }
 
 export default function CampaignForm() {
+  const router = useRouter();
   const connected = useConnectedWallet(client);
   const [form, setForm] = useState<FormDraft>(initialForm);
   const [prepared, setPrepared] = useState<PreparedDraft | null>(null);
@@ -267,7 +272,8 @@ export default function CampaignForm() {
         updateTermsUri(termsUri);
       }
       const config = await getProtocolConfigV2(client);
-      if (!config) throw new Error('ProtocolConfigV2 is not initialized on Devnet. Campaign creation is disabled until deployment is complete.');
+      const mock = !config && DEVNET_MOCK_MODE;
+      if (!config && !mock) throw new Error('ProtocolConfigV2 is not initialized on Devnet. Campaign creation is disabled until deployment is complete.');
       const [campaignRent, trancheRent, vaultRent, balance] = await Promise.all([
         withRpcRetry(() => client.rpc.getMinimumBalanceForRentExemption(BigInt(CAMPAIGN_V2_SIZE), { commitment: 'confirmed' }).send()),
         withRpcRetry(() => client.rpc.getMinimumBalanceForRentExemption(BigInt(TRANCHE_V2_SIZE), { commitment: 'confirmed' }).send()),
@@ -276,9 +282,11 @@ export default function CampaignForm() {
       ]);
       const transactionCount = BigInt(form.tranches.length + 2);
       const estimatedCost = campaignRent + trancheRent * BigInt(form.tranches.length) + vaultRent + transactionCount * 5_000n;
-      setPrepared({ campaignId, goal, duration: fundingDays * DAY_SECONDS, campaign, terms, canonical, hash, recipients, estimatedCost, walletBalance: balance, rent: { campaign: campaignRent, tranche: trancheRent, vault: vaultRent } });
+      setPrepared({ campaignId, goal, duration: fundingDays * DAY_SECONDS, campaign, terms, canonical, hash, recipients, estimatedCost, walletBalance: balance, rent: { campaign: campaignRent, tranche: trancheRent, vault: vaultRent }, mock });
       saveDraft(walletAddress, form);
-      setStatus('Review ready. Dev mock terms are ready or you can publish the downloaded JSON unchanged, then start the resumable transaction sequence.');
+      setStatus(mock
+        ? 'Review ready. ProtocolConfigV2 is not deployed, so this Devnet run will use local mock creation after review.'
+        : 'Review ready. Dev mock terms are ready or you can publish the downloaded JSON unchanged, then start the resumable transaction sequence.');
     } catch (error) {
       setPrepared(null);
       setStatus(error instanceof Error ? error.message : 'Could not prepare the campaign.');
@@ -323,6 +331,25 @@ export default function CampaignForm() {
         throw new Error('The connected wallet changed after review. Review the campaign again before signing.');
       }
       await verifyPublishedManifest(prepared);
+      if (prepared.mock) {
+        saveMockCampaignV2({
+          address: prepared.campaign,
+          creator,
+          campaignId: prepared.campaignId.toString(),
+          title: form.title.trim(),
+          description: form.description.trim(),
+          goal: prepared.goal.toString(),
+          fundingDuration: prepared.duration,
+          milestones: form.tranches.map((item, index) => ({
+            title: item.title.trim(),
+            shareBps: prepared.terms.tranches[index]!.share_bps,
+            proofPeriodSeconds: prepared.terms.tranches[index]!.proof_period_seconds,
+          })),
+        });
+        localStorage.removeItem(savedDraftKey(walletAddress));
+        router.push(`/campaign/${prepared.campaign}`);
+        return;
+      }
       let campaign = await getCampaignV2(client, prepared.campaign);
       if (campaign && campaign.trancheCount > prepared.terms.tranches.length) {
         throw new Error('The existing draft already has more milestones than this saved form. Use the original manifest to resume it.');
@@ -462,7 +489,9 @@ export default function CampaignForm() {
             <Preview label="Estimated setup cost" value={`~${formatSolV2(prepared.estimatedCost)} SOL`} />
             <Preview label="Wallet balance" value={`${formatSolV2(prepared.walletBalance)} SOL`} />
           </dl>
-          <div className="rounded-xl bg-amber-50 p-4 text-sm leading-6"><strong>{prepared.terms.tranches.length + 2} separate approvals.</strong> Create draft, add each milestone, then seal. If one step fails, confirmed steps remain on-chain and the same saved draft resumes from the next missing step.</div>
+          <div className="rounded-xl bg-amber-50 p-4 text-sm leading-6">{prepared.mock
+            ? <><strong>Local Devnet mock.</strong> Creation needs no wallet approvals and transfers no SOL.</>
+            : <><strong>{prepared.terms.tranches.length + 2} separate approvals.</strong> Create draft, add each milestone, then seal. If one step fails, confirmed steps remain on-chain and the same saved draft resumes from the next missing step.</>}</div>
           <button type="button" className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold" onClick={downloadManifest}>Download canonical terms JSON</button>
           <Field label="Published terms manifest URI" hint="Upload the downloaded file unchanged to Arweave, or keep the auto-filled dev mock URI.">
             <div className="flex gap-2">
@@ -477,7 +506,7 @@ export default function CampaignForm() {
             </div>
           </Field>
           <p className="text-sm leading-6">By starting, you confirm that you reviewed the recipient wallets, percentages, 1% success fee, and understand that the final seal cannot be edited.</p>
-          <button type="button" className="rounded-full bg-emerald-700 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={busy || !form.termsUri} onClick={() => void execute()}>{busy ? 'Processing current step…' : 'Start or resume V2 transactions'}</button>
+          <button type="button" className="rounded-full bg-emerald-700 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={busy || !form.termsUri} onClick={() => void execute()}>{busy ? 'Processing current step…' : prepared.mock ? 'Create mock campaign' : 'Start or resume V2 transactions'}</button>
         </section>
       ) : null}
 

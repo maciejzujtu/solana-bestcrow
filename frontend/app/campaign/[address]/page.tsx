@@ -9,6 +9,7 @@ import { useConnectedWallet } from '@solana/kit-plugin-wallet/react';
 import { client } from '../../providers';
 import {
   BPS_DENOMINATOR,
+  DEVNET_MOCK_MODE,
   arweaveGatewayUrl,
   cancelPledgeV2Ix,
   canonicalizeJson,
@@ -47,8 +48,9 @@ import {
   validateTermsAgainstCampaignV2,
 } from '../../lib/charity-vault-v2';
 import { sendV2Transaction } from '../../lib/send-v2-transaction';
+import { getMockCampaignV2, getMockPledgeV2, pledgeToMockCampaignV2 } from '../../lib/mock-campaigns-v2';
 
-type ReviewAction = { title: string; details: string[]; build: () => Promise<Instruction> };
+type ReviewAction = { title: string; details: string[]; build?: () => Promise<Instruction>; mockRun?: () => void };
 
 export default function CampaignPage() {
   const params = useParams<{ address: string }>();
@@ -71,6 +73,7 @@ export default function CampaignPage() {
   const [pledgeAmount, setPledgeAmount] = useState('');
   const [returnAmount, setReturnAmount] = useState('');
   const [evidenceUris, setEvidenceUris] = useState<Record<number, string>>({});
+  const [isMock, setIsMock] = useState(false);
 
   const wallet = connected ? address(connected.account.address) : null;
   useEffect(() => {
@@ -80,6 +83,21 @@ export default function CampaignPage() {
       setError('');
       try {
         const campaignAddress = address(params.address);
+        const mock = DEVNET_MOCK_MODE ? getMockCampaignV2(campaignAddress) : null;
+        if (mock) {
+          if (!active) return;
+          setCampaign(mock.campaign);
+          setTranches(mock.tranches);
+          setLedger(wallet ? getMockPledgeV2(campaignAddress, wallet) : null);
+          setConfig(null);
+          setClaims({});
+          setVoted({});
+          setTerms(mock.terms);
+          setContent(mock.content);
+          setTermsError('');
+          setIsMock(true);
+          return;
+        }
         const nextCampaign = await getCampaignV2(client, campaignAddress);
         if (!nextCampaign) throw new Error('CampaignV2 account was not found on Devnet.');
         const [nextTranches, nextLedger, nextConfig] = await Promise.all([
@@ -110,6 +128,7 @@ export default function CampaignPage() {
         setTerms(nextTerms);
         setContent(nextContent);
         setTermsError(nextTermsError);
+        setIsMock(false);
       } catch (reason) {
         if (active) setError(reason instanceof Error ? reason.message : 'Campaign could not be loaded.');
       } finally {
@@ -124,11 +143,25 @@ export default function CampaignPage() {
     setReview({ title, details, build });
   }
 
+  function queueMock(title: string, details: string[], mockRun: () => void) {
+    setStatus('');
+    setReview({ title, details, mockRun });
+  }
+
   async function submitReview() {
-    if (!review || !wallet || !connected?.signer) return;
+    if (!review) return;
     setBusy(true);
-    setStatus('Simulating on Devnet before opening the wallet…');
     try {
+      if (review.mockRun) {
+        setStatus('Applying local Devnet mock action…');
+        review.mockRun();
+        setReview(null);
+        setStatus('Mock pledge recorded. No wallet approval or Devnet transaction was needed.');
+        setRefresh((value) => value + 1);
+        return;
+      }
+      if (!wallet || !connected?.signer || !review.build) return;
+      setStatus('Simulating on Devnet before opening the wallet…');
       const ix = await review.build();
       const result = await sendV2Transaction(client, wallet, connected.signer, [ix]);
       setReview(null);
@@ -202,7 +235,7 @@ export default function CampaignPage() {
 
   const now = Math.floor(Date.now() / 1000);
   const isCreator = wallet === campaign.creator;
-  const canPledge = Boolean(wallet && campaign.status === 'Funding' && now < campaign.fundingDeadline);
+  const canPledge = Boolean((isMock || wallet) && campaign.status === 'Funding' && now < campaign.fundingDeadline);
   const canFinalizeFunding = Boolean(wallet && campaign.status === 'Funding' && now >= campaign.fundingDeadline && config);
   const availableRefund = campaign.refundPool > campaign.refundsPaid ? campaign.refundPool - campaign.refundsPaid : 0n;
   const estimatedFee = campaign.status === 'Funding' ? campaign.raised * 100n / 10_000n : campaign.feePaid;
@@ -232,16 +265,19 @@ export default function CampaignPage() {
             event.preventDefault();
             try {
               const amount = parseSolV2(pledgeAmount);
-              queue('Pledge to this campaign', [
-                `From / fee payer: ${wallet}`,
+              const details = [
+                `From / fee payer: ${isMock ? 'Local demo backer' : wallet}`,
                 `Campaign vault: ${campaign.address}`,
                 `Amount: ${formatSolV2(amount)} SOL`,
-                'Cluster: Devnet',
-                'State change: increases your cancellable pledge and campaign gross raised.',
-              ], () => pledgeV2Ix(wallet!, campaign.address, amount));
+                `Mode: ${isMock ? 'Local Devnet mock' : 'Devnet'}`,
+                'State change: increases your pledge and campaign gross raised.',
+              ];
+              if (isMock) queueMock('Pledge to this campaign', details, () => pledgeToMockCampaignV2(campaign.address, amount));
+              else queue('Pledge to this campaign', details, () => pledgeV2Ix(wallet!, campaign.address, amount));
             } catch (reason) { setStatus(reason instanceof Error ? reason.message : 'Invalid pledge amount.'); }
           }}><label className="block text-sm font-medium">Pledge amount (SOL)<input className="field" value={pledgeAmount} onChange={(event) => setPledgeAmount(event.target.value)} inputMode="decimal" required /></label><button className="action-primary" type="submit">Review pledge</button></form> : null}
-          {!wallet ? <p className="rounded-xl bg-slate-100 p-3 text-sm">Connect a wallet to see eligible actions.</p> : null}
+          {!wallet && !isMock ? <p className="rounded-xl bg-slate-100 p-3 text-sm">Connect a wallet to see eligible actions.</p> : null}
+          {isMock ? <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">Demo mode: pledges update this browser only. No SOL is transferred.</p> : null}
           {wallet && campaign.status === 'Funding' && now >= campaign.fundingDeadline && !config ? <p className="text-sm text-red-700">Protocol config is unavailable; funding cannot be safely finalized.</p> : null}
           {canFinalizeFunding ? <ActionButton onClick={() => queue('Finalize funding', [`Caller / fee payer: ${wallet}`, `Treasury: ${config!.treasury}`, `Gross raised: ${formatSolV2(campaign.raised)} SOL`, `Success fee if goal met: ${formatSolV2(estimatedFee)} SOL`, 'Cluster: Devnet', 'State change: marks the campaign Failed or Succeeded and transfers the configured fee only on success.'], () => finalizeFundingV2Ix(wallet!, campaign.address, config!.treasury))}>Review permissionless finalization</ActionButton> : null}
           {ledger && campaign.status === 'Funding' && now < campaign.fundingDeadline ? <ActionButton onClick={() => queue('Cancel full pledge', [`Backer / recipient: ${wallet}`, `Amount returned: ${formatSolV2(ledger.amount)} SOL plus ledger rent`, 'Cluster: Devnet', 'State change: closes your ledger and reduces gross raised.'], () => cancelPledgeV2Ix(wallet!, campaign.address))}>Review pledge cancellation</ActionButton> : null}
@@ -288,7 +324,7 @@ export default function CampaignPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-xl font-semibold">Canonical campaign terms</h2>{terms ? <><p className="mt-3 text-sm leading-6 text-slate-600">Verified against the SHA-256 commitment stored in CampaignV2. The URL is a locator; the permanent manifest is the source of descriptive content.</p><a className="mt-3 inline-block break-all font-mono text-xs text-emerald-800 underline" href={arweaveGatewayUrl(campaign.termsUri)} target="_blank" rel="noreferrer">{campaign.termsUri}</a></> : <p className="mt-3 text-sm text-slate-600">{campaign.status === 'Draft' ? 'Draft terms are not sealed and contributions are disabled.' : termsError}</p>}</section>
 
-      {review ? <section className="sticky bottom-4 z-10 rounded-2xl border-2 border-amber-500 bg-amber-50 p-5 shadow-xl" aria-labelledby="transaction-review-title"><h2 id="transaction-review-title" className="text-xl font-semibold">{review.title}</h2><ul className="mt-3 space-y-1 text-sm">{review.details.map((detail) => <li key={detail} className="break-all">{detail}</li>)}</ul><p className="mt-3 text-xs font-semibold">The exact transaction will be simulated before the wallet approval opens.</p><div className="mt-4 flex gap-2"><button className="action-primary" disabled={busy} onClick={() => void submitReview()}>{busy ? 'Simulating…' : 'Simulate & approve once'}</button><button className="action-secondary" disabled={busy} onClick={() => setReview(null)}>Cancel</button></div></section> : null}
+      {review ? <section className="sticky bottom-4 z-10 rounded-2xl border-2 border-amber-500 bg-amber-50 p-5 shadow-xl" aria-labelledby="transaction-review-title"><h2 id="transaction-review-title" className="text-xl font-semibold">{review.title}</h2><ul className="mt-3 space-y-1 text-sm">{review.details.map((detail) => <li key={detail} className="break-all">{detail}</li>)}</ul><p className="mt-3 text-xs font-semibold">{review.mockRun ? 'This demo action is stored only in this browser.' : 'The exact transaction will be simulated before the wallet approval opens.'}</p><div className="mt-4 flex gap-2"><button className="action-primary" disabled={busy} onClick={() => void submitReview()}>{busy ? 'Processing…' : review.mockRun ? 'Confirm mock pledge' : 'Simulate & approve once'}</button><button className="action-secondary" disabled={busy} onClick={() => setReview(null)}>Cancel</button></div></section> : null}
       {status ? <p className="break-words rounded-xl bg-slate-100 p-4 text-sm" role="status" aria-live="polite">{status.startsWith('Confirmed: http') || status.startsWith('Submitted but') ? <a className="underline" href={status.slice(status.indexOf('http'))} target="_blank" rel="noreferrer">{status}</a> : status}</p> : null}
     </section>
   );

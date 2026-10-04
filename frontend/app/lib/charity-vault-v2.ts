@@ -28,6 +28,13 @@ export const MAX_TRANCHES_V2 = 5;
 export const MAX_RECIPIENTS_V2 = 5;
 export const DAY_SECONDS = 86_400;
 
+// Devnet mockups can exercise the complete creation UI before the V2 config
+// account is deployed. Set NEXT_PUBLIC_ENABLE_DEVNET_MOCKS=false to force the
+// real on-chain path while still using Devnet.
+export const DEVNET_MOCK_MODE =
+  (process.env.NEXT_PUBLIC_SOLANA_CHAIN ?? 'solana:devnet') === 'solana:devnet' &&
+  process.env.NEXT_PUBLIC_ENABLE_DEVNET_MOCKS !== 'false';
+
 const MAX_U64 = (1n << 64n) - 1n;
 const utf8 = new TextEncoder();
 const utf8Decoder = new TextDecoder('utf-8', { fatal: true });

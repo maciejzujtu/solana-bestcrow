@@ -21,6 +21,7 @@ function shortAddress(value: string): string {
 }
 
 export default function WalletControls() {
+  const [mounted, setMounted] = useState(false);
   const wallets = useWallets(client);
   const connected = useConnectedWallet(client);
   const walletStatus = useWalletStatus(client);
@@ -31,6 +32,8 @@ export default function WalletControls() {
   const [status, setStatus] = useState('');
   const [session, setSession] = useState<WalletSession | null>(null);
   const connectedAddress = connected?.account.address;
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const refresh = () => setSession(connectedAddress ? getWalletSession(connectedAddress) : null);
@@ -80,7 +83,7 @@ export default function WalletControls() {
     }
   }
 
-  if (walletStatus === 'pending' || walletStatus === 'reconnecting') {
+  if (!mounted || walletStatus === 'pending' || walletStatus === 'reconnecting') {
     return <span className="text-sm text-slate-600" role="status">Reconnecting wallet…</span>;
   }
 
