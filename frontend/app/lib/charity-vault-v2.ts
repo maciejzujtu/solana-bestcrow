@@ -620,6 +620,38 @@ export async function hashCanonicalTermsV2(terms: CampaignTermsV2): Promise<Uint
 export function hashesEqual(a: Uint8Array, b: Uint8Array): boolean {
   return a.length === b.length && a.every((byte, index) => byte === b[index]);
 }
+export const MOCK_CONTENT_URI = 'ar://mock_content_000000000000000000000000000000';
+export const MOCK_TERMS_URI = 'ar://mock_terms_00000000000000000000000000000000';
+
+export function isMockArweaveUri(uri: string): boolean {
+  if (typeof uri !== 'string') return false;
+  return (
+    uri.startsWith('ar://mock') ||
+    uri === 'ar://0000000000000000000000000000000000000000000' ||
+    uri === 'ar://AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  );
+}
+
+const MOCK_STORAGE_PREFIX = 'bestcrow:mock-arweave:';
+
+export function getMockArweave(uri: string): string | null {
+  if (typeof window === 'undefined' || !window.localStorage) return null;
+  try {
+    return localStorage.getItem(MOCK_STORAGE_PREFIX + uri);
+  } catch {
+    return null;
+  }
+}
+
+export function saveMockArweave(uri: string, content: string): void {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    localStorage.setItem(MOCK_STORAGE_PREFIX + uri, content);
+  } catch {
+    // Storage is an optional aid.
+  }
+}
+
 export function arweaveGatewayUrl(uri: string): string {
   if (!/^ar:\/\/[A-Za-z0-9_-]{43}$/.test(uri)) throw new Error('Enter a valid permanent ar:// transaction URI.');
   return `https://arweave.net/${uri.slice(5)}`;
@@ -652,9 +684,12 @@ export function validateTermsAgainstCampaignV2(campaign: CampaignV2, terms: Camp
   }
 }
 export async function fetchVerifiedTermsV2(campaign: CampaignV2): Promise<{ terms: CampaignTermsV2; canonical: string }> {
-  const response = await fetch(arweaveGatewayUrl(campaign.termsUri), { cache: 'no-store' });
-  if (!response.ok) throw new Error(`Permanent terms could not be loaded (${response.status}).`);
-  const text = await response.text();
+  let text = getMockArweave(campaign.termsUri);
+  if (!text) {
+    const response = await fetch(arweaveGatewayUrl(campaign.termsUri), { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Permanent terms could not be loaded (${response.status}).`);
+    text = await response.text();
+  }
   if (text.length > 256_000) throw new Error('Terms document is unexpectedly large.');
   const terms = JSON.parse(text) as CampaignTermsV2;
   const canonical = canonicalizeTermsV2(terms);
@@ -664,9 +699,41 @@ export async function fetchVerifiedTermsV2(campaign: CampaignV2): Promise<{ term
   return { terms, canonical };
 }
 export async function fetchCampaignContentV2(terms: CampaignTermsV2): Promise<CampaignContentV2> {
-  const response = await fetch(arweaveGatewayUrl(terms.content_uri), { cache: 'no-store' });
-  if (!response.ok) throw new Error(`Permanent campaign content could not be loaded (${response.status}).`);
-  const text = await response.text();
+  const local = getMockArweave(terms.content_uri);
+  if (local) {
+    try {
+      const parsed = JSON.parse(local) as CampaignContentV2;
+      if (typeof parsed.title === 'string' && typeof parsed.description === 'string') {
+        return parsed;
+      }
+    } catch { /* proceed to network fetch */ }
+  }
+
+  let text: string | null = null;
+  try {
+    const response = await fetch(arweaveGatewayUrl(terms.content_uri), { cache: 'no-store' });
+    if (!response.ok) {
+      if (isMockArweaveUri(terms.content_uri)) {
+        return {
+          title: `Campaign ${terms.campaign_id}`,
+          description: 'Verified on-chain startup campaign created in mock/dev mode.',
+          milestones: terms.tranches.map((t) => ({ title: `Milestone ${t.index + 1}` })),
+        };
+      }
+      throw new Error(`Permanent campaign content could not be loaded (${response.status}).`);
+    }
+    text = await response.text();
+  } catch (err) {
+    if (isMockArweaveUri(terms.content_uri)) {
+      return {
+        title: `Campaign ${terms.campaign_id}`,
+        description: 'Verified on-chain startup campaign created in mock/dev mode.',
+        milestones: terms.tranches.map((t) => ({ title: `Milestone ${t.index + 1}` })),
+      };
+    }
+    throw err;
+  }
+
   if (text.length > 256_000) throw new Error('Campaign content is unexpectedly large.');
   const content = JSON.parse(text) as CampaignContentV2;
   if (typeof content.title !== 'string' || content.title.trim().length < 3 || typeof content.description !== 'string' || content.description.trim().length < 20) {

@@ -5,6 +5,8 @@ import {
   BACKER_LEDGER_V2_SIZE,
   CAMPAIGN_V2_SIZE,
   CLAIM_V2_SIZE,
+  MOCK_CONTENT_URI,
+  MOCK_TERMS_URI,
   PROGRAM_ID_V2,
   PROTOCOL_CONFIG_V2_SIZE,
   TRANCHE_V2_SIZE,
@@ -16,8 +18,10 @@ import {
   canonicalizeTermsV2,
   createCampaignDraftV2Ix,
   decodeCampaignV2Account,
+  fetchCampaignContentV2,
   formatSolV2,
   hashCanonicalTermsV2,
+  isMockArweaveUri,
   parseSolV2,
   type CampaignTermsV2,
 } from '../app/lib/charity-vault-v2.ts';
@@ -111,3 +115,22 @@ test('V2 draft and tranche builders use V2 PDAs and discriminators', async () =>
   assert.deepEqual(Array.from(tranche.data!.slice(0, 8)), [182, 203, 140, 5, 149, 0, 7, 143]);
   assert.equal(tranche.accounts?.length, 4);
 });
+
+test('Mock Arweave URIs conform to protocol and do not crash on fallback', async () => {
+  assert.equal(isMockArweaveUri(MOCK_CONTENT_URI), true);
+  assert.equal(isMockArweaveUri(MOCK_TERMS_URI), true);
+  assert.equal(isMockArweaveUri(`ar://${'0'.repeat(43)}`), true);
+  assert.equal(isMockArweaveUri('https://not-ar'), false);
+
+  assert.doesNotThrow(() => arweaveGatewayUrl(MOCK_CONTENT_URI));
+  assert.doesNotThrow(() => arweaveGatewayUrl(MOCK_TERMS_URI));
+
+  const fallback = await fetchCampaignContentV2({
+    ...terms,
+    content_uri: MOCK_CONTENT_URI,
+  });
+  assert.equal(typeof fallback.title, 'string');
+  assert.equal(typeof fallback.description, 'string');
+  assert.equal(fallback.milestones?.length, 2);
+});
+

@@ -10,6 +10,7 @@ import {
   CAMPAIGN_V2_SIZE,
   DAY_SECONDS,
   FEE_BPS_V2,
+  MOCK_CONTENT_URI,
   TRANCHE_V2_SIZE,
   addTrancheV2Ix,
   arweaveGatewayUrl,
@@ -20,11 +21,14 @@ import {
   fetchCampaignContentV2,
   formatSolV2,
   getCampaignV2,
+  getMockArweave,
   getProtocolConfigV2,
   getTrancheV2,
   hashCanonicalTermsV2,
   hashesEqual,
+  isMockArweaveUri,
   parseSolV2,
+  saveMockArweave,
   sealTermsV2Ix,
   type CampaignTermsV2,
 } from '../../lib/charity-vault-v2';
@@ -64,7 +68,7 @@ const defaultTranche = (index: number): TrancheDraft => ({
   recipients: '',
 });
 const initialForm: FormDraft = {
-  campaignId: '', title: '', description: '', goal: '', fundingDays: '30', contentUri: '', termsUri: '',
+  campaignId: '', title: '', description: '', goal: '', fundingDays: '30', contentUri: MOCK_CONTENT_URI, termsUri: '',
   tranches: [defaultTranche(0), defaultTranche(1)],
 };
 
@@ -202,8 +206,15 @@ export default function CampaignForm() {
       const fundingDays = Number(form.fundingDays);
       if (!Number.isInteger(fundingDays) || fundingDays < 7 || fundingDays > 183) throw new Error('Funding duration must be 7–183 full days.');
       if (form.tranches.length < 2 || form.tranches.length > 5) throw new Error('Choose 2–5 milestones.');
-      arweaveGatewayUrl(form.contentUri);
+      const contentUri = form.contentUri.trim() || MOCK_CONTENT_URI;
+      arweaveGatewayUrl(contentUri);
       if (form.termsUri) arweaveGatewayUrl(form.termsUri);
+
+      saveMockArweave(contentUri, JSON.stringify({
+        title: form.title.trim(),
+        description: form.description.trim(),
+        milestones: form.tranches.map((item) => ({ title: item.title.trim() })),
+      }));
 
       const creator = address(connected.account.address);
       const shares = form.tranches.map((item, index) => parsePercent(item.share, `Milestone ${index + 1} share`));
@@ -238,7 +249,7 @@ export default function CampaignForm() {
           recipients: recipients[index]!.addresses.map((value, recipientIndex) => ({ address: value, share_bps: recipients[index]!.shares[recipientIndex]! })),
         })),
         refund_policy: 'remaining_unreserved_pro_rata_v2',
-        content_uri: form.contentUri,
+        content_uri: contentUri,
       };
       const content = await fetchCampaignContentV2(terms);
       if (content.title.trim() !== form.title.trim() || content.description.trim() !== form.description.trim()) {
@@ -249,6 +260,12 @@ export default function CampaignForm() {
       }
       const canonical = canonicalizeTermsV2(terms);
       const hash = await hashCanonicalTermsV2(terms);
+      const mockTermsUri = `ar://mock_terms_${campaignId.toString().padStart(32, '0')}`;
+      const termsUri = form.termsUri.trim() || mockTermsUri;
+      saveMockArweave(termsUri, canonical);
+      if (!form.termsUri) {
+        updateTermsUri(termsUri);
+      }
       const config = await getProtocolConfigV2(client);
       if (!config) throw new Error('ProtocolConfigV2 is not initialized on Devnet. Campaign creation is disabled until deployment is complete.');
       const [campaignRent, trancheRent, vaultRent, balance] = await Promise.all([
@@ -261,7 +278,7 @@ export default function CampaignForm() {
       const estimatedCost = campaignRent + trancheRent * BigInt(form.tranches.length) + vaultRent + transactionCount * 5_000n;
       setPrepared({ campaignId, goal, duration: fundingDays * DAY_SECONDS, campaign, terms, canonical, hash, recipients, estimatedCost, walletBalance: balance, rent: { campaign: campaignRent, tranche: trancheRent, vault: vaultRent } });
       saveDraft(walletAddress, form);
-      setStatus('Review ready. Publish the downloaded canonical JSON unchanged, enter its ar:// URI, then start the resumable transaction sequence.');
+      setStatus('Review ready. Dev mock terms are ready or you can publish the downloaded JSON unchanged, then start the resumable transaction sequence.');
     } catch (error) {
       setPrepared(null);
       setStatus(error instanceof Error ? error.message : 'Could not prepare the campaign.');
@@ -280,9 +297,15 @@ export default function CampaignForm() {
 
   async function verifyPublishedManifest(expected: PreparedDraft): Promise<void> {
     if (!form.termsUri) throw new Error('Publish the canonical JSON first, then enter its permanent ar:// terms URI.');
-    const response = await fetch(arweaveGatewayUrl(form.termsUri), { cache: 'no-store' });
-    if (!response.ok) throw new Error(`The published terms document is not available yet (${response.status}).`);
-    const raw = await response.text();
+    const mock = getMockArweave(form.termsUri);
+    let raw: string;
+    if (mock) {
+      raw = mock;
+    } else {
+      const response = await fetch(arweaveGatewayUrl(form.termsUri), { cache: 'no-store' });
+      if (!response.ok) throw new Error(`The published terms document is not available yet (${response.status}).`);
+      raw = await response.text();
+    }
     if (raw.length > 256_000) throw new Error('The published terms document is unexpectedly large.');
     let parsed: unknown;
     try { parsed = JSON.parse(raw); } catch { throw new Error('The published terms document is not valid JSON.'); }
@@ -393,7 +416,12 @@ export default function CampaignForm() {
         </div>
         <Field label="Startup title"><input value={form.title} onChange={(event) => update('title', event.target.value)} className="field" required /></Field>
         <Field label="Public description"><textarea value={form.description} onChange={(event) => update('description', event.target.value)} className="field min-h-28" required /></Field>
-        <Field label="Public content URI" hint="Permanent ar:// document with the public startup profile or supporting content."><input value={form.contentUri} onChange={(event) => update('contentUri', event.target.value.trim())} className="field font-mono text-xs" placeholder="ar://…" required /></Field>
+        <Field label="Public content URI" hint="Permanent ar:// document or default dev mock.">
+          <div className="flex gap-2">
+            <input value={form.contentUri} onChange={(event) => update('contentUri', event.target.value.trim())} className="field font-mono text-xs flex-1" placeholder="ar://…" required />
+            <button type="button" className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold whitespace-nowrap hover:bg-slate-100" onClick={() => update('contentUri', MOCK_CONTENT_URI)}>Use dev mock</button>
+          </div>
+        </Field>
 
         <fieldset className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
           <legend className="px-2 font-semibold">Milestone schedule</legend>
@@ -436,7 +464,18 @@ export default function CampaignForm() {
           </dl>
           <div className="rounded-xl bg-amber-50 p-4 text-sm leading-6"><strong>{prepared.terms.tranches.length + 2} separate approvals.</strong> Create draft, add each milestone, then seal. If one step fails, confirmed steps remain on-chain and the same saved draft resumes from the next missing step.</div>
           <button type="button" className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold" onClick={downloadManifest}>Download canonical terms JSON</button>
-          <Field label="Published terms manifest URI" hint="Upload the downloaded file unchanged to Arweave. The app fetches and compares it before the first wallet prompt."><input value={form.termsUri} onChange={(event) => updateTermsUri(event.target.value)} className="field font-mono text-xs" placeholder="ar://…" required /></Field>
+          <Field label="Published terms manifest URI" hint="Upload the downloaded file unchanged to Arweave, or keep the auto-filled dev mock URI.">
+            <div className="flex gap-2">
+              <input value={form.termsUri} onChange={(event) => updateTermsUri(event.target.value)} className="field font-mono text-xs flex-1" placeholder="ar://…" required />
+              <button type="button" className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold whitespace-nowrap hover:bg-slate-100" onClick={() => {
+                if (prepared) {
+                  const mock = `ar://mock_terms_${prepared.campaignId.toString().padStart(32, '0')}`;
+                  saveMockArweave(mock, prepared.canonical);
+                  updateTermsUri(mock);
+                }
+              }}>Use dev mock</button>
+            </div>
+          </Field>
           <p className="text-sm leading-6">By starting, you confirm that you reviewed the recipient wallets, percentages, 1% success fee, and understand that the final seal cannot be edited.</p>
           <button type="button" className="rounded-full bg-emerald-700 px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={busy || !form.termsUri} onClick={() => void execute()}>{busy ? 'Processing current step…' : 'Start or resume V2 transactions'}</button>
         </section>

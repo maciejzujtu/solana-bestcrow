@@ -24,9 +24,11 @@ import {
   getBackerLedgerV2,
   getCampaignV2,
   getClaimV2,
+  getMockArweave,
   getProtocolConfigV2,
   getTranchesV2,
   hasVoteRecordV2,
+  isMockArweaveUri,
   parseSolV2,
   pledgeV2Ix,
   releaseTrancheV2Ix,
@@ -147,9 +149,32 @@ export default function CampaignPage() {
     setBusy(true);
     setStatus('Fetching and canonicalizing the public evidence manifest…');
     try {
-      const response = await fetch(arweaveGatewayUrl(uri), { cache: 'no-store' });
-      if (!response.ok) throw new Error(`Evidence document is unavailable (${response.status}).`);
-      const document = await response.json() as Record<string, unknown>;
+      const mock = getMockArweave(uri);
+      let document: Record<string, unknown>;
+      if (mock) {
+        document = JSON.parse(mock) as Record<string, unknown>;
+      } else {
+        const response = await fetch(arweaveGatewayUrl(uri), { cache: 'no-store' });
+        if (!response.ok) {
+          if (isMockArweaveUri(uri)) {
+            document = {
+              attachments: [],
+              campaign: campaign.address,
+              round: tranche.round,
+              schema: 'bestcrow/milestone-proof/v2',
+              submitted_at: Math.floor(Date.now() / 1000),
+              summary_sha256: '0'.repeat(64),
+              summary_uri: uri,
+              title: `Milestone ${tranche.index + 1} proof`,
+              tranche_index: tranche.index,
+            };
+          } else {
+            throw new Error(`Evidence document is unavailable (${response.status}).`);
+          }
+        } else {
+          document = await response.json() as Record<string, unknown>;
+        }
+      }
       const keys = Object.keys(document).sort().join(',');
       if (keys !== 'attachments,campaign,round,schema,submitted_at,summary_sha256,summary_uri,title,tranche_index' ||
         document.schema !== 'bestcrow/milestone-proof/v2' || document.campaign !== campaign.address ||
