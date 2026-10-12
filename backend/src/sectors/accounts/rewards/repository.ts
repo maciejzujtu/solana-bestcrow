@@ -37,7 +37,7 @@ export class RewardRepository {
   public listOffers(campaign: string): RewardOfferDto[] {
     const rows = this.db.prepare(`SELECT id FROM reward_offers WHERE campaign=? ORDER BY created_at,id`).all(campaign) as { id: string }[];
     // Never expose codes, keys or private message/file content on the public route.
-    return rows.map((row) => { const offer = this.getOffer(row.id); return offer ? { ...offer, content: null } : null; }).filter((offer): offer is RewardOfferDto => offer !== null);
+    return rows.flatMap((row) => { const offer = this.getOffer(row.id); return offer ? [{ ...offer, content: null }] : []; });
   }
   public createClaim(rewardId: string, wallet: string, delivery: unknown, now: number, content: string | null): RewardClaimDto {
     const id = randomUUID();

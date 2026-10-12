@@ -28,13 +28,6 @@ export const MAX_TRANCHES_V2 = 5;
 export const MAX_RECIPIENTS_V2 = 5;
 export const DAY_SECONDS = 86_400;
 
-// Devnet mockups can exercise the complete creation UI before the V2 config
-// account is deployed. Set NEXT_PUBLIC_ENABLE_DEVNET_MOCKS=false to force the
-// real on-chain path while still using Devnet.
-export const DEVNET_MOCK_MODE =
-  (process.env.NEXT_PUBLIC_SOLANA_CHAIN ?? 'solana:devnet') === 'solana:devnet' &&
-  process.env.NEXT_PUBLIC_ENABLE_DEVNET_MOCKS !== 'false';
-
 const MAX_U64 = (1n << 64n) - 1n;
 const utf8 = new TextEncoder();
 const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
@@ -691,12 +684,10 @@ export function validateTermsAgainstCampaignV2(campaign: CampaignV2, terms: Camp
   }
 }
 export async function fetchVerifiedTermsV2(campaign: CampaignV2): Promise<{ terms: CampaignTermsV2; canonical: string }> {
-  let text = getMockArweave(campaign.termsUri);
-  if (!text) {
-    const response = await fetch(arweaveGatewayUrl(campaign.termsUri), { cache: 'no-store' });
-    if (!response.ok) throw new Error(`Permanent terms could not be loaded (${response.status}).`);
-    text = await response.text();
-  }
+  if (isMockArweaveUri(campaign.termsUri)) throw new Error('Campaign terms use a browser-only mock URI and are not publicly verifiable.');
+  const response = await fetch(arweaveGatewayUrl(campaign.termsUri), { cache: 'no-store' });
+  if (!response.ok) throw new Error(`Permanent terms could not be loaded (${response.status}).`);
+  const text = await response.text();
   if (text.length > 256_000) throw new Error('Terms document is unexpectedly large.');
   const terms = JSON.parse(text) as CampaignTermsV2;
   const canonical = canonicalizeTermsV2(terms);
@@ -706,40 +697,13 @@ export async function fetchVerifiedTermsV2(campaign: CampaignV2): Promise<{ term
   return { terms, canonical };
 }
 export async function fetchCampaignContentV2(terms: CampaignTermsV2): Promise<CampaignContentV2> {
-  const local = getMockArweave(terms.content_uri);
-  if (local) {
-    try {
-      const parsed = JSON.parse(local) as CampaignContentV2;
-      if (typeof parsed.title === 'string' && typeof parsed.description === 'string') {
-        return parsed;
-      }
-    } catch { /* proceed to network fetch */ }
-  }
-
+  if (isMockArweaveUri(terms.content_uri)) throw new Error('Campaign content uses a browser-only mock URI and is not publicly available.');
   let text: string | null = null;
   try {
     const response = await fetch(arweaveGatewayUrl(terms.content_uri), { cache: 'no-store' });
-    if (!response.ok) {
-      if (isMockArweaveUri(terms.content_uri)) {
-        return {
-          title: `Campaign ${terms.campaign_id}`,
-          description: 'Verified on-chain startup campaign created in mock/dev mode.',
-          milestones: terms.tranches.map((t) => ({ title: `Milestone ${t.index + 1}` })),
-        };
-      }
-      throw new Error(`Permanent campaign content could not be loaded (${response.status}).`);
-    }
+    if (!response.ok) throw new Error(`Permanent campaign content could not be loaded (${response.status}).`);
     text = await response.text();
-  } catch (err) {
-    if (isMockArweaveUri(terms.content_uri)) {
-      return {
-        title: `Campaign ${terms.campaign_id}`,
-        description: 'Verified on-chain startup campaign created in mock/dev mode.',
-        milestones: terms.tranches.map((t) => ({ title: `Milestone ${t.index + 1}` })),
-      };
-    }
-    throw err;
-  }
+  } catch (err) { throw err; }
 
   if (text.length > 256_000) throw new Error('Campaign content is unexpectedly large.');
   const content = JSON.parse(text) as CampaignContentV2;
@@ -766,4 +730,7 @@ export function parseSolV2(value: string): bigint {
 }
 export function explorerTransactionUrl(signature: string): string {
   return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+}
+export function solscanTransactionUrl(signature: string): string {
+  return `https://solscan.io/tx/${signature}?cluster=devnet`;
 }

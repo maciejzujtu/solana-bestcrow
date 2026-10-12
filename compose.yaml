@@ -1,6 +1,6 @@
 # One command to present:  docker compose up --build
 # Web: http://localhost:3000   API: http://localhost:4000/api/health
-name: charity-vault
+name: charity-vault # Preserve the existing named SQLite volume.
 
 services:
   frontend:
@@ -12,7 +12,10 @@ services:
         NEXT_PUBLIC_CHARITY_VAULT_PROGRAM_ID: ${CHARITY_VAULT_PROGRAM_ID:-74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG}
         NEXT_PUBLIC_SOLANA_RPC_RETRY_ATTEMPTS: ${RPC_RETRY_ATTEMPTS:-3}
         NEXT_PUBLIC_SOLANA_RPC_RETRY_BASE_DELAY_MS: ${RPC_RETRY_BASE_DELAY_MS:-250}
-    image: charity-vault-web:latest
+        NEXT_PUBLIC_PAYMENT_MODE: ${NEXT_PUBLIC_PAYMENT_MODE:-mock}
+        NEXT_PUBLIC_SOLANA_CHAIN: ${NEXT_PUBLIC_SOLANA_CHAIN:-solana:devnet}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000}
+    image: bestcrow-web:latest
     init: true
     ports:
       - "3000:3000"
@@ -26,7 +29,7 @@ services:
 
   backend:
     build: ./backend
-    image: charity-vault-backend:latest
+    image: bestcrow-backend:latest
     init: true
     environment:
       PORT: "4000"
