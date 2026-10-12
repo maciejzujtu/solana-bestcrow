@@ -696,8 +696,17 @@ export async function fetchVerifiedTermsV2(campaign: CampaignV2): Promise<{ term
   validateTermsAgainstCampaignV2(campaign, terms);
   return { terms, canonical };
 }
-export async function fetchCampaignContentV2(terms: CampaignTermsV2): Promise<CampaignContentV2> {
-  if (isMockArweaveUri(terms.content_uri)) throw new Error('Campaign content uses a browser-only mock URI and is not publicly available.');
+export async function fetchCampaignContentV2(terms: CampaignTermsV2, allowMock = true): Promise<CampaignContentV2> {
+  if (isMockArweaveUri(terms.content_uri)) {
+    if (!allowMock) {
+      throw new Error('Campaign content uses a browser-only mock URI and is not publicly available.');
+    }
+    return {
+      title: `Campaign ${terms.campaign_id}`,
+      description: 'Verified on-chain startup campaign created in mock/dev mode.',
+      milestones: terms.tranches.map((t) => ({ title: `Milestone ${t.index + 1}` })),
+    };
+  }
   let text: string | null = null;
   try {
     const response = await fetch(arweaveGatewayUrl(terms.content_uri), { cache: 'no-store' });

@@ -1,5 +1,8 @@
 # Bestcrow — decision log
 
+> [!NOTE]
+> **Consolidated Specification:** All decisions D-001 through D-008 have been consolidated and updated in the canonical [Master Development Plan](DEVELOPMENT_PLAN.md) for the Colosseum Hackathon.
+
 Running record of product/technical decisions. Newest at the top. Each entry
 states the decision, the reason, and the source that wins on conflict.
 
