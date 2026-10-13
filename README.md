@@ -96,49 +96,15 @@ authority must be disclosed. The latest devnet deployment has not been
 confirmed for this checkout; the local smoke script exercises only a base
 campaign flow.
 
-## Run the project with Docker
-
-Docker Compose is the recommended way to open the project. Install Docker
-Desktop with the Linux containers option enabled, then run from the repository
-root:
+## Local commands
 
 ```bash
-git clone https://github.com/maciejzujtu/solana-bestcrow.git
-cd solana-bestcrow
-copy .env.example .env   # Windows PowerShell: Copy-Item .env.example .env
 docker compose up --build
 ```
 
-The first build downloads the Node dependencies and can take a few minutes.
-When both containers are healthy, open:
-
-- Web app: <http://localhost:3000>
-- API health: <http://localhost:4000/api/health>
-
-Keep the terminal open to see logs. Stop the services with `Ctrl+C`, or run
-`docker compose down`. The SQLite database is kept in the Docker volume
-`charity-vault_backend-data`; remove it only when you intentionally want to
-reset local accounts and indexed data:
-
-```bash
-docker compose down
-docker volume rm solana-bestcrow_backend-data
-```
-
-The default configuration connects to Solana Devnet. Use a wallet configured
-for Devnet in the browser. Docker runs the web and API services; it does not
-deploy the Solana program. Deployment and Devnet smoke testing are documented
-in [docs/DEVNET_DEPLOYMENT.md](docs/DEVNET_DEPLOYMENT.md).
-
-### Verify the containers
-
-```bash
-docker compose ps
-curl http://localhost:4000/api/health
-```
-
-On Windows PowerShell, use `Invoke-WebRequest http://localhost:4000/api/health`
-if `curl` is not available.
+This starts the current web and API services, not a validated target-MVP
+demo. The frontend defaults to `http://localhost:3000`; API health is at
+`http://localhost:4000/api/health`.
 
 ```bash
 cd rust
@@ -146,19 +112,16 @@ NO_DNA=1 anchor build --no-idl -- --arch v0
 NO_DNA=1 cargo test --manifest-path programs/charity-vault/Cargo.toml
 ```
 
-To run checks outside Docker, install the dependencies in the relevant folder
-first:
-
 ```bash
 cd backend
-npm ci
+npm install
 npm run typecheck
 npm test
 ```
 
 ```bash
 cd frontend
-npm ci
+npm install
 npm run typecheck
 npm test
 ```

@@ -11,7 +11,7 @@ Time: ~3 minutes live (~18s/slide). One idea per slide. Every claim traces to co
 | 4 | Terms are locked before the first pledge | How it works: schedule + seal | Relevance 30% |
 | 5 | Backers approve each release; the rule decides, not an admin | Voting + revision + termination | Relevance 30% |
 | 6 | Every failure path is permissionless and pro-rata | Failure/refund/double-claim guards | Completeness 25% |
-| 7 | Prototype and Devnet readiness | Proof: program id + tx links | Completeness 25% |
+| 7 | Live on Solana devnet — confirmed transactions | Proof: program id + tx links | Completeness 25% |
 | 8 | Built for the ecosystem, not from scratch | Anchor/kit/LiteSVM; reusable | Impl. potential 15% |
 | 9 | What is true today — and the one honest limit | Verified vs implemented vs planned | Originality 10% + trust |
 | 10 | Why this wins, and what we do next | Map to rubric + ask | all |
