@@ -6,8 +6,8 @@ accounts directly, verifies permanent manifests against on-chain commitments,
 and builds V2 transactions with simulation and a single wallet approval per
 step. The UI stays disabled until the Devnet deployment exposes
 `ProtocolConfigV2`.
-Follow the [Master Development Plan](../docs/DEVELOPMENT_PLAN.md)
-for the financial rules, protocol specification, and backend dependencies.
+Follow the [ordered implementation plan](../docs/IMPLEMENTATION_PLAN.md)
+for the financial rules and backend dependencies.
 
 For the visual layer, use [Colosseum](https://colosseum.com/) as the design
 inspiration. The [frontend sketch](STOCKGATE_FRONTEND_SKETCH.md#visual-reference)

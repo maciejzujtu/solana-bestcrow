@@ -1,8 +1,5 @@
 # Bestcrow: specyfikacja MVP i plan wdrożenia
 
-> [!NOTE]
-> **Consolidated Specification:** All implementation tasks, decisions, and protocol rules have been consolidated into the canonical [Master Development Plan](DEVELOPMENT_PLAN.md) for the Colosseum Hackathon.
-
 Stan dokumentu: 4 października 2026. Ten plik opisuje **cel i zadania**, a nie
 funkcje już działające. Punktem odniesienia dla inwentaryzacji jest commit
 `15cb14a`. Kod, testy i wdrożenie muszą zostać ponownie sprawdzone po zmianach.

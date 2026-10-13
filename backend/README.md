@@ -4,7 +4,7 @@ Bestcrow's target product is startup crowdfunding with staged releases, not a
 charity campaign directory. This document describes the **current legacy API**.
 The target MVP rules below are requirements for the next implementation pass;
 they are not enforced by the current backend or deployed program.
-The [Master Development Plan](../docs/DEVELOPMENT_PLAN.md) is the canonical
+The [implementation plan](../docs/IMPLEMENTATION_PLAN.md) is the canonical
 source for the ordered program, backend, frontend, and verification work.
 
 The backend has two sectors for the currently named Charity Vault Solana program:

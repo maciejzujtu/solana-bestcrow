@@ -1,26 +1,22 @@
-# Bestcrow Pitch Deck — Outline (10 Slides, Colosseum Hackathon)
+# Bestcrow pitch deck — outline (10 slides, judges/mentors)
 
-**Audience:** Colosseum Hackathon Judges, Solana Foundation, and Colosseum Accelerator Mentors  
-**Track:** DeFi & Capital Markets (or Consumer / Apps)  
-**Time:** 3 minutes live (~18 seconds per slide). One clear takeaway per slide.
+Audience: HackYeah 2026 · Superteam Poland — "Finance Without Intermediaries" mentors/judges.
+Time: ~3 minutes live (~18s/slide). One idea per slide. Every claim traces to code/docs.
 
-| # | Title (Claim) | Intent | Maps to Colosseum Criterion |
+| # | Title (claim) | Intent | Maps to criterion |
 | --- | --- | --- | --- |
-| 1 | **Bestcrow — Milestone-Escrow Crowdfunding on Solana** | Hook, thesis: non-custodial capital formation for real builders | First Impression & Framing |
-| 2 | **The Capital Formation Vacuum on Solana** | Problem: Memecoin casino rugs vs Kickstarter's 8% custodial black box | Problem & Market Need |
-| 3 | **The Intermediary is Custody & Discretionary Control** | Solution: Remove the operator; vaults owned by PDAs, payouts governed by code | Novelty & Independence |
-| 4 | **Immutable Schedule Locked Before the First Pledge** | Terms: 2–5 tranches, $\le 50\%$ each, sealed with Arweave hash before pledging | Technical Integrity & Design |
-| 5 | **Backers Approve Each Tranche; The Rule Decides, Not an Admin** | Governance: Contribution-weighted voting with strict $>50\%$ approval threshold | Governance & Product Polish |
-| 6 | **Permissionless Failure & Pro-Rata Backer Protection** | Safety: 100% refund on missed goal; pro-rata refunds if milestones fail | User Safety & Game Theory |
-| 7 | **Live Devnet Prototype & Solscan Verification** | Proof: Real transactions signed via Phantom, visible on Solscan Devnet | Functionality & Execution |
-| 8 | **Built with Modern Solana Native Stack** | Tech: Anchor 1.1.2 + `@solana/kit` (Web3.js v2) + exact-lamport checked math | Technical Excellence |
-| 9 | **Business Model & Market Potential (Venture Scale)** | Economics: 1% platform fee on success; $50M volume = $500k ARR; roadmap | Business Viability & TAM |
-| 10 | **Why Bestcrow Wins & Colosseum Accelerator Ask** | The Ask: Admission into the $250k Colosseum Accelerator cohort | Execution & Vision |
+| 1 | Bestcrow — escrow that releases by rule, not by an operator | One line, audience, ask | frame |
+| 2 | A creator should not need you to trust them either | Problem + named users | Idea/problem 20% |
+| 3 | The intermediary is custody + discretionary payout | Name the intermediary precisely | Relevance 30% |
+| 4 | Terms are locked before the first pledge | How it works: schedule + seal | Relevance 30% |
+| 5 | Backers approve each release; the rule decides, not an admin | Voting + revision + termination | Relevance 30% |
+| 6 | Every failure path is permissionless and pro-rata | Failure/refund/double-claim guards | Completeness 25% |
+| 7 | Prototype and Devnet readiness | Proof: program id + tx links | Completeness 25% |
+| 8 | Built for the ecosystem, not from scratch | Anchor/kit/LiteSVM; reusable | Impl. potential 15% |
+| 9 | What is true today — and the one honest limit | Verified vs implemented vs planned | Originality 10% + trust |
+| 10 | Why this wins, and what we do next | Map to rubric + ask | all |
 
----
-
-### Colosseum Honesty Notes
-- **Working Prototype:** Fully functional on Solana Devnet with test SOL + isolated browser Mock mode.
-- **Modern SDK:** Frontend natively built on `@solana/kit` (Solana Web3.js v2).
-- **Public Chain Transparency:** Addresses and transactions are public; no misleading "privacy" claims.
-- **Disclosed Origins:** Foundation laid during HackYeah 2026; refined, verified, and re-engineered for Colosseum.
+Honesty notes baked in:
+- Live demo = the deployed `charity-vault` program (18 ix, confirmed devnet tx).
+- `bestcrow` = the newer target MVP program (Phase 0–1 done; Phase 2 in progress); labelled as such.
+- No fabricated metrics/users. Limits stated on slide 9.

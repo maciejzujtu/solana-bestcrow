@@ -1,8 +1,5 @@
 # Bestcrow Protocol V2
 
-> [!NOTE]
-> **Consolidated Specification:** The full protocol specification, economic math, and account layouts have been consolidated into the canonical [Master Development Plan](DEVELOPMENT_PLAN.md) for the Colosseum Hackathon.
-
 Ten dokument zamyka P0.1-P0.3. Opisuje projektowany protokol dla nowych
 kampanii startupowych. Obecny program Rust pozostaje legacy i nie implementuje
 jeszcze tego formatu.

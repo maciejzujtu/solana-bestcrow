@@ -1,50 +1,42 @@
-# Bestcrow — Speaker Notes (10 Slides, ~3 Minutes, Colosseum Hackathon)
+# Bestcrow — speaker notes (10 slides, ~3 minutes)
 
-**Target Timing:** ~18 seconds per slide. If pressed for time, speak the **bold sentence**.
+Timing target: ~18 seconds per slide. If cut short, keep the **bold** sentence.
 
----
+## 1 — Bestcrow (title) — 12s
+Bestcrow is escrow that releases by rule, not by an operator. It's startup/prototype crowdfunding on Solana where backers approve each release, and every failure path is permissionless. **We remove the Kickstarter-style intermediary from custody and payout decisions.**
 
-## Slide 1 — Bestcrow: Milestone-Escrow Crowdfunding on Solana (15s)
-Bestcrow is non-custodial milestone crowdfunding for startup prototypes on Solana where backers approve each release and every failure path is permissionless. **We replace centralized Kickstarter custodians and speculative meme casinos with verifiable, milestone-gated capital formation.**
+## 2 — Problem — 20s
+Two people who don't know each other need a platform both must trust. The creator needs capital before the work exists; the backer hands money to a stranger and to the operator. **We picked a specific user — early-stage teams raising in milestones, and their backers — not "everyone".**
 
-## Slide 2 — The Capital Formation Problem (18s)
-Today on Solana, liquidity is abundant, but capital formation is broken. Founders either launch speculative tokens on bonding curves with zero product accountability, or use Web2 Kickstarter, which takes 8% and hands 100% of money upfront. **Real hardware and software builders need capital before the work exists, but backers need protection against abandonment.**
+## 3 — The intermediary, named — 22s
+The operator is custody plus discretionary payout: it holds the money, takes a cut, can freeze, and on success pays everything at once. We move custody into a program-owned vault and gate releases by votes fixed at creation. **Why not a database? Because a DB admin can edit state and still controls the payout rails — here the rule is the source of truth.**
 
-## Slide 3 — The Intermediary, Removed (18s)
-Traditional platforms are custody plus discretionary control: they hold your money, take a cut, freeze accounts, and pay everything at once. We move custody into a Solana program-owned PDA vault and gate payouts by immutable rules. **The code is the sole source of truth—no platform operator can block a payout or redirect backer funds.**
+## 4 — Terms locked before the first pledge — 18s
+The creator drafts 2–5 tranches, each at most 50%, summing to 100%, and seals them before any pledge. The MVP has no creator deposit. Funding runs 7–183 days and allows overfunding. **No one can reshape the schedule after money is in.**
 
-## Slide 4 — Immutable Terms Sealed Before Funding (18s)
-Creators draft 2 to 5 tranches, each at most 50%, summing to 100%, and seal them with an on-chain Arweave terms hash before a single pledge is accepted. Funding runs 7 to 183 days with overfunding support. **No one—not even the founder—can reshape the budget or rules after capital is committed.**
+## 5 — Backers approve each release — 20s
+Evidence opens a 7-day vote; weight is the final pledge; approval needs strictly more than 50% of all contributions. First failure = 30 days to improve, then a second vote; second failure = termination. **An approved tranche is payable exactly once to a fixed recipient — no admin picks winners.**
 
-## Slide 5 — Backers Approve Each Release by Vote (20s)
-Submitting evidence opens a 7-day vote. Voting weight equals the backer's final contribution. Approval requires strictly more than 50% of all contributions. A first rejection grants 30 days to improve followed by a second vote. **Approved tranches are payable exactly once to predetermined recipients—no administrator picks winners.**
+## 6 — Failure is first-class — 18s
+Missed goal: no fee, each backer claims 100%. Termination: the pool is frozen and refunded pro-rata. Refunds and releases are exactly-once. **Anyone can submit an eligible transaction — a timer never moves money by itself.**
 
-## Slide 6 — Permissionless Failure & Backer Protection (18s)
-If a funding goal is missed, backers claim 100% of their SOL with zero platform fee. If a milestone is rejected after fundraising, the remaining pool is frozen and refunded pro-rata. **Any caller can trigger state transitions when deadlines pass—a timer never moves money by itself.**
+## 7 — Proof on devnet — 20s
+This is prototype, not a mockup. The prototype includes the program, client, indexer and deployment workflow. The final V2 Devnet transaction links are pending verification. **Show the prototype and repository workflow.**
 
-## Slide 7 — Live Devnet Prototype & Solscan Verification (20s)
-This is not a mockup. Bestcrow is running live on Solana Devnet. You can connect Phantom, pledge test SOL, and view the transaction confirmed on Solscan Devnet in 400 milliseconds. We also built an isolated browser mock mode for instant evaluation. **Try the live demo, verify the transactions on Solscan, and inspect the code.**
+## 8 — Built for the ecosystem — 16s
+Rust + Anchor 1.1.2 on-chain with fixed-size state and checked math; @solana/kit + Wallet Standard on the client; LiteSVM tests plus client tests. A Node/SQLite indexer serves fast reads but never controls funds. **Tokenless — no oracle, no market to manipulate.**
 
-## Slide 8 — Built for the Solana Ecosystem (18s)
-Built in Anchor with fixed-size state, checked `u128` math, and zero-loss lamport rounding. The client is powered natively by `@solana/kit` (Solana Web3.js v2) with automatic RPC failover. We have 100% test coverage across frontend and backend. **This is pure Solana-native architecture: sub-cent voting, micro-pledges, and full rent reclamation.**
+## 9 — What's true today — 20s
+We separate verified, implemented, in-progress, and planned. The honest limit: the program enforces money, not worthiness or delivery, and it can't prove handover; upgrade authority is disclosed. **We lead with limits because judges reward awareness, not pretending.**
 
-## Slide 9 — Business Model & Venture Viability (18s)
-Our business model is simple: a 1% protocol fee charged only upon successful fundraising. That's 8x cheaper than Kickstarter. At $50M in prototype funding volume, Bestcrow generates $500k in protocol revenue. Future expansions include Token-2022 backer passes and venture syndicate pools. **We are building a venture-scalable capital formation protocol for the global ecosystem.**
-
-## Slide 10 — Why Bestcrow Wins / The Ask (17s)
-Bestcrow solves real-world capital formation on Solana with mathematical rigor, cutting-edge Web3.js v2 tech, and immediate venture scalability. **We are applying to the Colosseum Accelerator to turn Bestcrow into the primary crowdfunding standard for the Solana ecosystem.**
+## 10 — Why this wins / next — 18s
+Mapped to the rubric: relevance 30 because custody is removed on-chain; completeness 25 on the click-through prototype and local tests; a named user and honest boundary for the idea score; Anchor + tests + client for implementation; a tokenless conditional vault for originality. **Ask: try the demo, read the repo, and point us at a real team to pilot.**
 
 ---
 
-### Colosseum Judges & VCs Q&A Prep
-
-- **Why Solana instead of an Ethereum L2?**
-  * Frequent on-chain milestone voting and micro-pledges require sub-cent transaction fees and instant sub-second finality. Doing contribution-weighted voting for thousands of backers on Ethereum L1 or fragmented L2s would be cost-prohibitive.
-- **What happens if a creator abandons the project?**
-  * The proof deadline expires. Anyone can permissionlessly call `finalize_proof_timeout` and `terminate`, which freezes remaining unreleased funds into a pro-rata refund pool that backers can claim individually.
-- **Can a founder fake votes by pledging 51% to themselves?**
-  * A founder who self-funds 51% pays a 1% protocol fee on their own capital and can still only withdraw up to 50% in Tranche 1. They risk more capital than they can extract, making self-rugs economically negative.
-- **Why not claim privacy?**
-  * Solana transactions, token transfers, and balances are inherently public. Transparency is a feature: backers see the vault balance on Solscan. We promise custodial independence, not anonymity. Digital reward perks (Steam keys) are delivered off-chain.
-- **What is the upgrade authority status?**
-  * The deployment wallet currently holds the upgrade authority on Devnet. For mainnet, the upgrade authority will be migrated to a community multisig or permanently revoked once audited.
+### Q&A prep (short answers)
+- **Where exactly does the intermediary disappear?** In the vault + rules: only the program's fixed state transitions move funds; the backend can't bypass them.
+- **Party disappears mid-flow?** Missed goal refunds; a rejected milestone lets anyone terminate and refund pro-rata; approved tranches remain payable.
+- **Can the author change it?** The deploy wallet holds upgrade authority; that's disclosed, not hidden. Remove it after the intended version is tested.
+- **Why blockchain, not a database?** The rule, not an operator, is the source of truth; a DB admin could edit state and control payouts.
+- **Next week?** Confirm V2 on Devnet, run the adversarial tests, add a durable public content store.

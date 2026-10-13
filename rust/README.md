@@ -15,7 +15,7 @@ zamknięcie harmonogramu, nadwyżki, anulowanie, prowizję i refund po porażce
 celu. Przeszły testy jednostkowe; instrukcje nie zostały jeszcze sprawdzone
 w SBF/LiteSVM ani wdrożone. Stan `Completed` i pełna ścieżka zakończenia wymagają P2.
 Kanoniczna kolejność prac i otwarte decyzje znajdują się w
-[Master Development Plan](../docs/DEVELOPMENT_PLAN.md).
+[planie implementacji](../docs/IMPLEMENTATION_PLAN.md).
 
 ## Od czego zacząć
 

@@ -1,8 +1,5 @@
 # Wdrożenie Bestcrow V2 na Devnet
 
-> [!NOTE]
-> **Consolidated Specification:** The complete Devnet deployment runbook and checklist have been consolidated into Section 7 of the [Master Development Plan](DEVELOPMENT_PLAN.md).
-
 Ta checklista rozdziela kroki bezpieczne od kroków wysyłających transakcje.
 Skrypty domyślnie wykonują tylko build, odczyty i symulację. Transakcja jest
 wysyłana dopiero po podaniu jawnej flagi `--execute...`.
