@@ -4,10 +4,11 @@ import Link from 'next/link';
 import './globals.css';
 import { Providers } from './providers';
 import WalletControls from './wallet-controls';
+import ModeControls from './mode-controls';
 
 export const metadata: Metadata = {
-  title: 'Bestcrow — startup funding without intermediaries',
-  description: 'Milestone funding for startups with transparent on-chain rules.',
+  title: 'Bestcrow | milestone funding for startup prototypes',
+  description: 'Community-backed startup prototypes with public milestones and Solana Devnet transactions.',
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -26,12 +27,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/profile" className="hover:underline">Profile</Link>
               </div>
             </div>
-            <WalletControls />
+            <div className="flex flex-wrap items-center gap-3"><ModeControls /><WalletControls /></div>
           </nav>
         </header>
         <main className="mx-auto min-h-[calc(100vh-7rem)] max-w-5xl px-6 py-12">{children}</main>
         <footer className="border-t border-slate-200 px-6 py-4 text-sm text-slate-600">
-          <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-x-4 gap-y-1"><span>BESTCROW</span><span>1% fee only when a campaign succeeds · Devnet</span></div>
+          <div className="mx-auto flex max-w-5xl flex-wrap justify-between gap-x-4 gap-y-1"><span>BESTCROW</span><span>Devnet uses test SOL · 1% fee after successful fundraising · network costs separate</span></div>
         </footer>
         </Providers>
       </body>

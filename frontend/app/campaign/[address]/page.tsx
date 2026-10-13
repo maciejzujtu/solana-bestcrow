@@ -9,13 +9,13 @@ import { useConnectedWallet } from '@solana/kit-plugin-wallet/react';
 import { client } from '../../providers';
 import {
   BPS_DENOMINATOR,
-  DEVNET_MOCK_MODE,
   arweaveGatewayUrl,
   cancelPledgeV2Ix,
   canonicalizeJson,
   claimRefundV2Ix,
   claimTerminationRefundV2Ix,
   explorerTransactionUrl,
+  solscanTransactionUrl,
   fetchCampaignContentV2,
   fetchVerifiedTermsV2,
   finalizeFundingV2Ix,
@@ -25,7 +25,6 @@ import {
   getBackerLedgerV2,
   getCampaignV2,
   getClaimV2,
-  getMockArweave,
   getProtocolConfigV2,
   getTranchesV2,
   hasVoteRecordV2,
@@ -49,10 +48,12 @@ import {
 } from '../../lib/charity-vault-v2';
 import { sendV2Transaction } from '../../lib/send-v2-transaction';
 import { getMockCampaignV2, getMockPledgeV2, pledgeToMockCampaignV2 } from '../../lib/mock-campaigns-v2';
+import { usePaymentMode } from '../../lib/payment-mode';
 
 type ReviewAction = { title: string; details: string[]; build?: () => Promise<Instruction>; mockRun?: () => void };
 
 export default function CampaignPage() {
+  const mode = usePaymentMode();
   const params = useParams<{ address: string }>();
   const connected = useConnectedWallet(client);
   const [campaign, setCampaign] = useState<CampaignV2 | null>(null);
@@ -67,6 +68,7 @@ export default function CampaignPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
+  const [lastSignature, setLastSignature] = useState('');
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [review, setReview] = useState<ReviewAction | null>(null);
@@ -83,8 +85,9 @@ export default function CampaignPage() {
       setError('');
       try {
         const campaignAddress = address(params.address);
-        const mock = DEVNET_MOCK_MODE ? getMockCampaignV2(campaignAddress) : null;
-        if (mock) {
+        if (mode === 'mock') {
+          const mock = getMockCampaignV2(campaignAddress);
+          if (!mock) throw new Error('This mock campaign is not available in this browser. No Devnet account was queried.');
           if (!active) return;
           setCampaign(mock.campaign);
           setTranches(mock.tranches);
@@ -136,7 +139,7 @@ export default function CampaignPage() {
       }
     })();
     return () => { active = false; };
-  }, [params.address, wallet, refresh]);
+  }, [mode, params.address, wallet, refresh]);
 
   function queue(title: string, details: string[], build: () => Promise<Instruction>) {
     setStatus('');
@@ -165,6 +168,7 @@ export default function CampaignPage() {
       const ix = await review.build();
       const result = await sendV2Transaction(client, wallet, connected.signer, [ix]);
       setReview(null);
+      setLastSignature(result.signature);
       setStatus(result.confirmation === 'confirmed'
         ? `Confirmed: ${explorerTransactionUrl(result.signature)}`
         : `Submitted but not confirmed within 30 seconds. Do not repeat it yet: ${explorerTransactionUrl(result.signature)}`);
@@ -182,32 +186,10 @@ export default function CampaignPage() {
     setBusy(true);
     setStatus('Fetching and canonicalizing the public evidence manifest…');
     try {
-      const mock = getMockArweave(uri);
-      let document: Record<string, unknown>;
-      if (mock) {
-        document = JSON.parse(mock) as Record<string, unknown>;
-      } else {
-        const response = await fetch(arweaveGatewayUrl(uri), { cache: 'no-store' });
-        if (!response.ok) {
-          if (isMockArweaveUri(uri)) {
-            document = {
-              attachments: [],
-              campaign: campaign.address,
-              round: tranche.round,
-              schema: 'bestcrow/milestone-proof/v2',
-              submitted_at: Math.floor(Date.now() / 1000),
-              summary_sha256: '0'.repeat(64),
-              summary_uri: uri,
-              title: `Milestone ${tranche.index + 1} proof`,
-              tranche_index: tranche.index,
-            };
-          } else {
-            throw new Error(`Evidence document is unavailable (${response.status}).`);
-          }
-        } else {
-          document = await response.json() as Record<string, unknown>;
-        }
-      }
+      if (isMockArweaveUri(uri)) throw new Error('Devnet evidence must use a real, publicly reachable ar:// document.');
+      const response = await fetch(arweaveGatewayUrl(uri), { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Evidence document is unavailable (${response.status}).`);
+      const document = await response.json() as Record<string, unknown>;
       const keys = Object.keys(document).sort().join(',');
       if (keys !== 'attachments,campaign,round,schema,submitted_at,summary_sha256,summary_uri,title,tranche_index' ||
         document.schema !== 'bestcrow/milestone-proof/v2' || document.campaign !== campaign.address ||
@@ -322,10 +304,10 @@ export default function CampaignPage() {
         })}</div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-xl font-semibold">Canonical campaign terms</h2>{terms ? <><p className="mt-3 text-sm leading-6 text-slate-600">Verified against the SHA-256 commitment stored in CampaignV2. The URL is a locator; the permanent manifest is the source of descriptive content.</p><a className="mt-3 inline-block break-all font-mono text-xs text-emerald-800 underline" href={arweaveGatewayUrl(campaign.termsUri)} target="_blank" rel="noreferrer">{campaign.termsUri}</a></> : <p className="mt-3 text-sm text-slate-600">{campaign.status === 'Draft' ? 'Draft terms are not sealed and contributions are disabled.' : termsError}</p>}</section>
+      <section className="rounded-2xl border border-slate-200 bg-white p-6"><h2 className="text-xl font-semibold">{isMock ? 'Mock campaign terms' : 'Canonical campaign terms'}</h2>{terms ? <><p className="mt-3 text-sm leading-6 text-slate-600">{isMock ? 'Stored only in this browser. No on-chain commitment exists.' : 'Verified against the SHA-256 commitment stored in CampaignV2. The permanent manifest supplies descriptive content.'}</p>{!isMock ? <a className="mt-3 inline-block break-all font-mono text-xs text-emerald-800 underline" href={arweaveGatewayUrl(campaign.termsUri)} target="_blank" rel="noreferrer">{campaign.termsUri}</a> : null}</> : <p className="mt-3 text-sm text-slate-600">{campaign.status === 'Draft' ? 'Draft terms are not sealed and contributions are disabled.' : termsError}</p>}</section>
 
       {review ? <section className="sticky bottom-4 z-10 rounded-2xl border-2 border-amber-500 bg-amber-50 p-5 shadow-xl" aria-labelledby="transaction-review-title"><h2 id="transaction-review-title" className="text-xl font-semibold">{review.title}</h2><ul className="mt-3 space-y-1 text-sm">{review.details.map((detail) => <li key={detail} className="break-all">{detail}</li>)}</ul><p className="mt-3 text-xs font-semibold">{review.mockRun ? 'This demo action is stored only in this browser.' : 'The exact transaction will be simulated before the wallet approval opens.'}</p><div className="mt-4 flex gap-2"><button className="action-primary" disabled={busy} onClick={() => void submitReview()}>{busy ? 'Processing…' : review.mockRun ? 'Confirm mock pledge' : 'Simulate & approve once'}</button><button className="action-secondary" disabled={busy} onClick={() => setReview(null)}>Cancel</button></div></section> : null}
-      {status ? <p className="break-words rounded-xl bg-slate-100 p-4 text-sm" role="status" aria-live="polite">{status.startsWith('Confirmed: http') || status.startsWith('Submitted but') ? <a className="underline" href={status.slice(status.indexOf('http'))} target="_blank" rel="noreferrer">{status}</a> : status}</p> : null}
+      {status ? <div className="break-words rounded-xl bg-slate-100 p-4 text-sm" role="status" aria-live="polite"><p>{status}</p>{lastSignature && !isMock ? <p className="mt-2">View transaction: <a className="underline" href={solscanTransactionUrl(lastSignature)} target="_blank" rel="noreferrer">Solscan</a> · <a className="underline" href={explorerTransactionUrl(lastSignature)} target="_blank" rel="noreferrer">Solana Explorer</a></p> : null}</div> : null}
     </section>
   );
 }

@@ -18,8 +18,8 @@ import {
   campaignV2Pda,
   canonicalizeTermsV2,
   createCampaignDraftV2Ix,
-  DEVNET_MOCK_MODE,
   explorerTransactionUrl,
+  solscanTransactionUrl,
   fetchCampaignContentV2,
   formatSolV2,
   getCampaignV2,
@@ -38,6 +38,7 @@ import { sendV2Transaction } from '../../lib/send-v2-transaction';
 import { client } from '../../providers';
 import { withRpcRetry } from '../../lib/rpc-retry';
 import { saveMockCampaignV2 } from '../../lib/mock-campaigns-v2';
+import { usePaymentMode } from '../../lib/payment-mode';
 
 type TrancheDraft = { title: string; share: string; proofDays: string; recipients: string };
 type FormDraft = {
@@ -134,6 +135,7 @@ function saveDraft(wallet: string, draft: FormDraft): void {
 }
 
 export default function CampaignForm() {
+  const mode = usePaymentMode();
   const router = useRouter();
   const connected = useConnectedWallet(client);
   const [form, setForm] = useState<FormDraft>(initialForm);
@@ -142,7 +144,7 @@ export default function CampaignForm() {
   const [busy, setBusy] = useState(false);
   const [receipts, setReceipts] = useState<string[]>([]);
 
-  const walletAddress = connected?.account.address ?? '';
+  const walletAddress = connected?.account.address ?? (mode === 'mock' ? 'local-mock' : '');
   useEffect(() => {
     if (!walletAddress) return;
     try {
@@ -202,7 +204,7 @@ export default function CampaignForm() {
     setStatus('');
     setReceipts([]);
     try {
-      if (!connected?.signer) throw new Error('Connect a signing wallet before preparing immutable terms.');
+      if (mode === 'devnet' && !connected?.signer) throw new Error('Connect Phantom on Devnet before preparing immutable terms.');
       if (!/^\d+$/.test(form.campaignId)) throw new Error('Campaign ID must be a non-negative whole number.');
       if (form.title.trim().length < 3) throw new Error('Campaign title must have at least three characters.');
       if (form.description.trim().length < 20) throw new Error('Description must have at least 20 characters.');
@@ -211,17 +213,20 @@ export default function CampaignForm() {
       const fundingDays = Number(form.fundingDays);
       if (!Number.isInteger(fundingDays) || fundingDays < 7 || fundingDays > 183) throw new Error('Funding duration must be 7–183 full days.');
       if (form.tranches.length < 2 || form.tranches.length > 5) throw new Error('Choose 2–5 milestones.');
-      const contentUri = form.contentUri.trim() || MOCK_CONTENT_URI;
+      const contentUri = mode === 'mock' ? MOCK_CONTENT_URI : form.contentUri.trim();
+      if (mode === 'devnet' && isMockArweaveUri(contentUri)) throw new Error('Publish the campaign content to Arweave before creating a Devnet campaign. A browser-only mock URI cannot be used.');
       arweaveGatewayUrl(contentUri);
-      if (form.termsUri) arweaveGatewayUrl(form.termsUri);
+      if (form.termsUri) {
+        if (mode === 'devnet' && isMockArweaveUri(form.termsUri)) throw new Error('A Devnet campaign needs a real Arweave terms URI.');
+        arweaveGatewayUrl(form.termsUri);
+      }
 
-      saveMockArweave(contentUri, JSON.stringify({
-        title: form.title.trim(),
-        description: form.description.trim(),
+      if (mode === 'mock') saveMockArweave(contentUri, JSON.stringify({
+        title: form.title.trim(), description: form.description.trim(),
         milestones: form.tranches.map((item) => ({ title: item.title.trim() })),
       }));
 
-      const creator = address(connected.account.address);
+      const creator = address(connected?.account.address ?? '11111111111111111111111111111111');
       const shares = form.tranches.map((item, index) => parsePercent(item.share, `Milestone ${index + 1} share`));
       if (shares.some((share) => share > 5_000)) throw new Error('Each milestone may receive at most 50%.');
       if (shares.reduce((sum, share) => sum + share, 0) !== BPS_DENOMINATOR) throw new Error('Milestone shares must total exactly 100%.');
@@ -256,7 +261,9 @@ export default function CampaignForm() {
         refund_policy: 'remaining_unreserved_pro_rata_v2',
         content_uri: contentUri,
       };
-      const content = await fetchCampaignContentV2(terms);
+      const content = mode === 'mock'
+        ? { title: form.title.trim(), description: form.description.trim(), milestones: form.tranches.map((item) => ({ title: item.title.trim() })) }
+        : await fetchCampaignContentV2(terms);
       if (content.title.trim() !== form.title.trim() || content.description.trim() !== form.description.trim()) {
         throw new Error('The title or description at the public content URI differs from this form. Publish the exact content first.');
       }
@@ -266,27 +273,29 @@ export default function CampaignForm() {
       const canonical = canonicalizeTermsV2(terms);
       const hash = await hashCanonicalTermsV2(terms);
       const mockTermsUri = `ar://mock_terms_${campaignId.toString().padStart(32, '0')}`;
-      const termsUri = form.termsUri.trim() || mockTermsUri;
-      saveMockArweave(termsUri, canonical);
-      if (!form.termsUri) {
-        updateTermsUri(termsUri);
+      if (mode === 'mock') {
+        saveMockArweave(mockTermsUri, canonical);
+        updateTermsUri(mockTermsUri);
+      } else {
+        const config = await getProtocolConfigV2(client);
+        if (!config) throw new Error('ProtocolConfigV2 is not initialized on Devnet. Switch to mock mode or complete the Devnet deployment checklist.');
       }
-      const config = await getProtocolConfigV2(client);
-      const mock = !config && DEVNET_MOCK_MODE;
-      if (!config && !mock) throw new Error('ProtocolConfigV2 is not initialized on Devnet. Campaign creation is disabled until deployment is complete.');
-      const [campaignRent, trancheRent, vaultRent, balance] = await Promise.all([
-        withRpcRetry(() => client.rpc.getMinimumBalanceForRentExemption(BigInt(CAMPAIGN_V2_SIZE), { commitment: 'confirmed' }).send()),
-        withRpcRetry(() => client.rpc.getMinimumBalanceForRentExemption(BigInt(TRANCHE_V2_SIZE), { commitment: 'confirmed' }).send()),
-        withRpcRetry(() => client.rpc.getMinimumBalanceForRentExemption(0n, { commitment: 'confirmed' }).send()),
-        withRpcRetry(() => client.rpc.getBalance(creator, { commitment: 'confirmed' }).send()).then((result) => result.value),
-      ]);
+      const mock = mode === 'mock';
+      const [campaignRent, trancheRent, vaultRent, balance] = mock
+        ? [0n, 0n, 0n, 0n]
+        : await Promise.all([
+          withRpcRetry(() => client.rpc.getMinimumBalanceForRentExemption(BigInt(CAMPAIGN_V2_SIZE), { commitment: 'confirmed' }).send()),
+          withRpcRetry(() => client.rpc.getMinimumBalanceForRentExemption(BigInt(TRANCHE_V2_SIZE), { commitment: 'confirmed' }).send()),
+          withRpcRetry(() => client.rpc.getMinimumBalanceForRentExemption(0n, { commitment: 'confirmed' }).send()),
+          withRpcRetry(() => client.rpc.getBalance(creator, { commitment: 'confirmed' }).send()).then((result) => result.value),
+        ]);
       const transactionCount = BigInt(form.tranches.length + 2);
-      const estimatedCost = campaignRent + trancheRent * BigInt(form.tranches.length) + vaultRent + transactionCount * 5_000n;
+      const estimatedCost = mock ? 0n : campaignRent + trancheRent * BigInt(form.tranches.length) + vaultRent + transactionCount * 5_000n;
       setPrepared({ campaignId, goal, duration: fundingDays * DAY_SECONDS, campaign, terms, canonical, hash, recipients, estimatedCost, walletBalance: balance, rent: { campaign: campaignRent, tranche: trancheRent, vault: vaultRent }, mock });
       saveDraft(walletAddress, form);
       setStatus(mock
-        ? 'Review ready. ProtocolConfigV2 is not deployed, so this Devnet run will use local mock creation after review.'
-        : 'Review ready. Dev mock terms are ready or you can publish the downloaded JSON unchanged, then start the resumable transaction sequence.');
+        ? 'Mock review ready. This browser-only campaign will not transfer SOL or create a Devnet transaction.'
+        : 'Review ready. Download and publish the exact terms JSON to Arweave, enter its URI, then start the Devnet transactions.');
     } catch (error) {
       setPrepared(null);
       setStatus(error instanceof Error ? error.message : 'Could not prepare the campaign.');
@@ -305,7 +314,8 @@ export default function CampaignForm() {
 
   async function verifyPublishedManifest(expected: PreparedDraft): Promise<void> {
     if (!form.termsUri) throw new Error('Publish the canonical JSON first, then enter its permanent ar:// terms URI.');
-    const mock = getMockArweave(form.termsUri);
+    if (!expected.mock && isMockArweaveUri(form.termsUri)) throw new Error('A browser-only mock terms URI cannot be sealed into a Devnet campaign.');
+    const mock = expected.mock ? getMockArweave(form.termsUri) : null;
     let raw: string;
     if (mock) {
       raw = mock;
@@ -322,11 +332,11 @@ export default function CampaignForm() {
   }
 
   async function execute() {
-    if (!prepared || !connected?.signer) return;
+    if (!prepared || (!prepared.mock && !connected?.signer)) return;
     setBusy(true);
     setStatus('Verifying the permanent terms document before any wallet prompt…');
     try {
-      const creator = address(connected.account.address);
+      const creator = address(connected?.account.address ?? '11111111111111111111111111111111');
       if (prepared.terms.creator !== creator) {
         throw new Error('The connected wallet changed after review. Review the campaign again before signing.');
       }
@@ -365,7 +375,7 @@ export default function CampaignForm() {
       if (!campaign) {
         setStatus('Step 1: simulate, sign and create the V2 draft on Devnet.');
         const { ix } = await createCampaignDraftV2Ix(creator, prepared.campaignId, prepared.goal, prepared.duration);
-        const result = await sendV2Transaction(client, creator, connected.signer, [ix]);
+        const result = await sendV2Transaction(client, creator, connected!.signer!, [ix]);
         setReceipts((current) => [...current, result.signature]);
         if (result.confirmation !== 'confirmed') {
           setStatus(`Draft submitted as ${result.signature}, but confirmation is still pending. Do not sign it again; use Resume after Explorer confirms it.`);
@@ -401,7 +411,7 @@ export default function CampaignForm() {
         const recipients = prepared.recipients[index]!;
         setStatus(`Step ${index + 2}: simulate, sign and add milestone ${index + 1} of ${prepared.terms.tranches.length}.`);
         const ix = await addTrancheV2Ix(creator, campaign.address, index, tranche.share_bps, tranche.proof_period_seconds, recipients.addresses, recipients.shares);
-        const result = await sendV2Transaction(client, creator, connected.signer, [ix]);
+        const result = await sendV2Transaction(client, creator, connected!.signer!, [ix]);
         setReceipts((current) => [...current, result.signature]);
         if (result.confirmation !== 'confirmed') {
           setStatus(`Milestone ${index + 1} was submitted as ${result.signature}, but confirmation is pending. Do not repeat it; resume after Explorer confirms it.`);
@@ -411,7 +421,7 @@ export default function CampaignForm() {
 
       setStatus('Final step: simulate and sign the irreversible seal. Funding begins only after this confirms.');
       const seal = await sealTermsV2Ix(creator, campaign.address, prepared.hash, form.termsUri);
-      const result = await sendV2Transaction(client, creator, connected.signer, [seal]);
+      const result = await sendV2Transaction(client, creator, connected!.signer!, [seal]);
       setReceipts((current) => [...current, result.signature]);
       if (result.confirmation === 'confirmed') {
         localStorage.removeItem(savedDraftKey(walletAddress));
@@ -431,7 +441,7 @@ export default function CampaignForm() {
       <header>
         <p className="text-xs font-bold uppercase tracking-[.18em] text-emerald-700">Resumable V2 draft · Devnet</p>
         <h1 id="new-campaign-title" className="display-font mt-3 text-5xl font-semibold">Create campaign</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">Prepare all terms, publish the canonical manifest, then create the draft milestone by milestone. Only the final seal starts fundraising and makes the schedule immutable.</p>
+        <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">{mode === 'mock' ? 'Create a browser-only campaign without wallet approvals or SOL transfers.' : 'Use Phantom on Devnet and test SOL. Publish permanent content and terms, then sign each on-chain step. Only the final seal starts fundraising.'}</p>
       </header>
 
       <form className="space-y-6" onSubmit={(event) => { event.preventDefault(); void prepare(); }} noValidate>
@@ -443,10 +453,10 @@ export default function CampaignForm() {
         </div>
         <Field label="Startup title"><input value={form.title} onChange={(event) => update('title', event.target.value)} className="field" required /></Field>
         <Field label="Public description"><textarea value={form.description} onChange={(event) => update('description', event.target.value)} className="field min-h-28" required /></Field>
-        <Field label="Public content URI" hint="Permanent ar:// document or default dev mock.">
+        <Field label="Public content URI" hint={mode === 'mock' ? 'Mock content stays in this browser.' : 'Required: a publicly reachable permanent ar:// document.'}>
           <div className="flex gap-2">
             <input value={form.contentUri} onChange={(event) => update('contentUri', event.target.value.trim())} className="field font-mono text-xs flex-1" placeholder="ar://…" required />
-            <button type="button" className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold whitespace-nowrap hover:bg-slate-100" onClick={() => update('contentUri', MOCK_CONTENT_URI)}>Use dev mock</button>
+            {mode === 'mock' ? <button type="button" className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold whitespace-nowrap hover:bg-slate-100" onClick={() => update('contentUri', MOCK_CONTENT_URI)}>Use mock content</button> : null}
           </div>
         </Field>
 
@@ -490,19 +500,19 @@ export default function CampaignForm() {
             <Preview label="Wallet balance" value={`${formatSolV2(prepared.walletBalance)} SOL`} />
           </dl>
           <div className="rounded-xl bg-amber-50 p-4 text-sm leading-6">{prepared.mock
-            ? <><strong>Local Devnet mock.</strong> Creation needs no wallet approvals and transfers no SOL.</>
+            ? <><strong>Browser-only mock.</strong> Creation needs no wallet approvals and transfers no SOL.</>
             : <><strong>{prepared.terms.tranches.length + 2} separate approvals.</strong> Create draft, add each milestone, then seal. If one step fails, confirmed steps remain on-chain and the same saved draft resumes from the next missing step.</>}</div>
           <button type="button" className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold" onClick={downloadManifest}>Download canonical terms JSON</button>
-          <Field label="Published terms manifest URI" hint="Upload the downloaded file unchanged to Arweave, or keep the auto-filled dev mock URI.">
+          <Field label="Published terms manifest URI" hint={prepared.mock ? 'This simulated URI exists only in your browser.' : 'Upload the downloaded JSON unchanged to Arweave and enter its permanent URI.'}>
             <div className="flex gap-2">
               <input value={form.termsUri} onChange={(event) => updateTermsUri(event.target.value)} className="field font-mono text-xs flex-1" placeholder="ar://…" required />
-              <button type="button" className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold whitespace-nowrap hover:bg-slate-100" onClick={() => {
+              {prepared.mock ? <button type="button" className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold whitespace-nowrap hover:bg-slate-100" onClick={() => {
                 if (prepared) {
                   const mock = `ar://mock_terms_${prepared.campaignId.toString().padStart(32, '0')}`;
                   saveMockArweave(mock, prepared.canonical);
                   updateTermsUri(mock);
                 }
-              }}>Use dev mock</button>
+              }}>Use mock terms</button> : null}
             </div>
           </Field>
           <p className="text-sm leading-6">By starting, you confirm that you reviewed the recipient wallets, percentages, 1% success fee, and understand that the final seal cannot be edited.</p>
@@ -511,7 +521,7 @@ export default function CampaignForm() {
       ) : null}
 
       {status ? <p className="break-words rounded-xl bg-slate-100 p-4 text-sm leading-6" role="status" aria-live="polite">{status}</p> : null}
-      {receipts.length > 0 ? <section aria-label="Confirmed and submitted transactions"><h2 className="text-sm font-semibold">Transaction history for this attempt</h2><ol className="mt-2 space-y-1 text-xs">{receipts.map((signature, index) => <li key={signature}><a className="break-all text-emerald-800 underline" href={explorerTransactionUrl(signature)} target="_blank" rel="noreferrer">Step {index + 1}: {signature}</a></li>)}</ol></section> : null}
+      {receipts.length > 0 ? <section aria-label="Confirmed and submitted transactions"><h2 className="text-sm font-semibold">Devnet transaction history for this attempt</h2><ol className="mt-2 space-y-2 text-xs">{receipts.map((signature, index) => <li key={signature} className="break-all">Step {index + 1}: {signature} · <a className="text-emerald-800 underline" href={solscanTransactionUrl(signature)} target="_blank" rel="noreferrer">Solscan</a> · <a className="text-emerald-800 underline" href={explorerTransactionUrl(signature)} target="_blank" rel="noreferrer">Solana Explorer</a></li>)}</ol></section> : null}
       <p className="text-xs leading-5 text-slate-500">Account-size note: each backer later funds a separate {BACKER_LEDGER_V2_SIZE}-byte ledger. This setup estimate covers only the campaign, vault and milestone accounts.</p>
     </div>
   );

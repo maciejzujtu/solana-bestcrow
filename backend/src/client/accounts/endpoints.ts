@@ -14,8 +14,6 @@ import type {
   WalletChallengeInput,
   WalletDto,
   WalletProofInput,
-  ContributionDto,
-  CreatorProfileDto,
 } from './types.js';
 import type { RewardClaimDto, RewardOfferDto } from './types.js';
 

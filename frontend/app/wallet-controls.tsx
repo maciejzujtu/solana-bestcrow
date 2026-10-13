@@ -63,10 +63,9 @@ export default function WalletControls() {
       const accounts = await connect.dispatchAsync(wallet);
       const active = client.wallet.getState().connected?.account.address ?? accounts[0]?.address;
       if (!active) throw new Error('Wallet connected without an active account.');
-      await walletFirstLogin(active);
-      setStatus('Wallet connected and signed in.');
+      setStatus('Wallet connected. Sign in separately to manage a profile or claim off-chain rewards.');
     } catch (reason) {
-      setStatus(reason instanceof Error ? reason.message : 'Could not connect or sign in with the wallet.');
+      setStatus(reason instanceof Error ? reason.message : 'Could not connect the wallet.');
     } finally {
       setLoginBusy(false);
     }
