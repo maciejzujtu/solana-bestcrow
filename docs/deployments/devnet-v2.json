@@ -1,0 +1,34 @@
+{
+  "cluster": "devnet",
+  "rpcUrl": "https://api.devnet.solana.com",
+  "programId": "74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG",
+  "deployer": "F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15",
+  "upgradeAuthority": "F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15",
+  "programDataAddress": "FRFBii8c2KphXrQ7fpVhyFVN5GDDk667akCqfyCDrqN3",
+  "configPda": "AN88jLFTY72ekqGj9Pm3x6rUaMBg1ZNs4dQSLw3eEXN9",
+  "configPdaBump": 253,
+  "configStatus": "pending_upgrade_authority_signature",
+  "idlSha256": "79f2015d3765be39e07baa853c2e768c2e4da54a93ea4ad63d4d3274d9458838",
+  "bestcrowIdlSha256": "b3a05904f20098d9b0787d38aac9083372ad940b4fef89adcd5e0ed3ce46810a",
+  "programExplorer": "https://explorer.solana.com/address/74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG?cluster=devnet",
+  "programDataExplorer": "https://explorer.solana.com/address/FRFBii8c2KphXrQ7fpVhyFVN5GDDk667akCqfyCDrqN3?cluster=devnet",
+  "authorityExplorer": "https://explorer.solana.com/address/F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15?cluster=devnet",
+  "programShow": {
+    "owner": "BPFLoaderUpgradeab1e11111111111111111111111",
+    "lastDeployedSlot": 507150736,
+    "dataLength": 472896,
+    "balance": "2.40319052 SOL"
+  },
+  "proofCampaign3Tranche": {
+    "manifestTerms": "docs/manifests/proof-campaign-3tranche-terms.json",
+    "manifestContent": "docs/manifests/proof-campaign-3tranche-content.json",
+    "tranches": [
+      { "index": 0, "shareBps": 4000, "label": "Initial Architecture & Prototype (40%)" },
+      { "index": 1, "shareBps": 3000, "label": "Milestone 1: Beta Platform & Testing (30%)" },
+      { "index": 2, "shareBps": 3000, "label": "Milestone 2: Production Audit & Deployment (30%)" }
+    ],
+    "targetPledgeSol": "0.1 SOL",
+    "solscanTxFormat": "https://solscan.io/tx/<SIGNATURE>?cluster=devnet",
+    "solscanProgram": "https://solscan.io/account/74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG?cluster=devnet"
+  }
+}

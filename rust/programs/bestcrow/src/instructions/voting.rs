@@ -242,3 +242,79 @@ pub struct VoteFinalized {
     pub approved: bool,
     pub status: TrancheStatus,
 }
+
+/// Feature C: Adaptive Quorum & Anti-Apathy Voting evaluation.
+/// Checks that total votes cast meets `quorum_bps` (e.g. 2500 = 25%) of total raised,
+/// and `yes_weight` meets `supermajority_bps` (e.g. 6667 = 66.67%) of votes cast.
+pub fn evaluate_adaptive_quorum(
+    raised: u64,
+    yes_weight: u64,
+    no_weight: u64,
+    quorum_bps: u16,
+    supermajority_bps: u16,
+) -> Result<bool> {
+    require!(raised > 0, BestcrowError::ArithmeticOverflow);
+    let total_votes = yes_weight
+        .checked_add(no_weight)
+        .ok_or(BestcrowError::ArithmeticOverflow)?;
+
+    // Check quorum: total_votes * 10_000 >= raised * quorum_bps
+    let votes_scaled = (total_votes as u128)
+        .checked_mul(10_000)
+        .ok_or(BestcrowError::ArithmeticOverflow)?;
+    let quorum_threshold = (raised as u128)
+        .checked_mul(quorum_bps as u128)
+        .ok_or(BestcrowError::ArithmeticOverflow)?;
+
+    if votes_scaled < quorum_threshold {
+        return Ok(false);
+    }
+
+    // Check supermajority: yes_weight * 10_000 >= total_votes * supermajority_bps
+    let yes_scaled = (yes_weight as u128)
+        .checked_mul(10_000)
+        .ok_or(BestcrowError::ArithmeticOverflow)?;
+    let approval_threshold = (total_votes as u128)
+        .checked_mul(supermajority_bps as u128)
+        .ok_or(BestcrowError::ArithmeticOverflow)?;
+
+    Ok(yes_scaled >= approval_threshold)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_adaptive_quorum_prevents_apathy_deadlock() {
+        let raised = 100_000_000_000; // 100 SOL
+        let yes_weight = 40_000_000_000; // 40 SOL (40%)
+        let no_weight = 0; // 0 SOL (0%)
+
+        // Under 50% absolute majority, 40 * 2 = 80 <= 100 -> Fails
+        let absolute_approved = yes_weight * 2 > raised;
+        assert!(!absolute_approved);
+
+        // Under Adaptive Quorum (25% quorum, 66.67% approval of cast votes) -> Passes
+        let adaptive_approved = evaluate_adaptive_quorum(raised, yes_weight, no_weight, 2500, 6667).unwrap();
+        assert!(adaptive_approved);
+    }
+
+    #[test]
+    fn test_adaptive_quorum_rejects_insufficient_quorum() {
+        let raised = 100_000_000_000;
+        let yes_weight = 10_000_000_000; // 10% (< 25% quorum)
+        let no_weight = 0;
+        let approved = evaluate_adaptive_quorum(raised, yes_weight, no_weight, 2500, 6667).unwrap();
+        assert!(!approved);
+    }
+
+    #[test]
+    fn test_adaptive_quorum_rejects_insufficient_supermajority() {
+        let raised = 100_000_000_000;
+        let yes_weight = 20_000_000_000; // 20 SOL
+        let no_weight = 20_000_000_000; // 20 SOL (50% approval < 66.67%)
+        let approved = evaluate_adaptive_quorum(raised, yes_weight, no_weight, 2500, 6667).unwrap();
+        assert!(!approved);
+    }
+}

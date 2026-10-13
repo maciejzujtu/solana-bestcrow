@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
+import { decryptRewardContent, encryptRewardContent } from './crypto.js';
 import type { RewardClaimDto, RewardOfferDto, RewardType } from './types.js';
 
 export interface RewardOfferInput { campaign: string; title: string; type: RewardType; description: string | null; content: string | null; minAmount: string; quantity: number | null; }
@@ -22,16 +23,17 @@ export class RewardRepository {
 
   public createOffer(input: RewardOfferInput, now: number): RewardOfferDto {
     const id = randomUUID();
+    const storedContent = input.content ? encryptRewardContent(input.content) : null;
     this.db.prepare(`INSERT INTO reward_offers
       (id,campaign,title,type,description,content,min_amount,quantity,created_at) VALUES (?,?,?,?,?,?,?,?,?)`)
-      .run(id, input.campaign, input.title, input.type, input.description, input.content, input.minAmount, input.quantity, now);
+      .run(id, input.campaign, input.title, input.type, input.description, storedContent, input.minAmount, input.quantity, now);
     return this.getOffer(id)!;
   }
   public getOffer(id: string): RewardOfferDto | null {
     const row = this.db.prepare(`SELECT o.*, COUNT(CASE WHEN c.status != 'cancelled' THEN 1 END) AS claimed_count
       FROM reward_offers o LEFT JOIN reward_claims c ON c.reward_id=o.id WHERE o.id=? GROUP BY o.id`).get(id) as any;
     return row ? { id: row.id, campaign: row.campaign, title: row.title, type: row.type,
-      description: row.description, content: row.content, minAmount: row.min_amount,
+      description: row.description, content: row.content ? decryptRewardContent(row.content) : null, minAmount: row.min_amount,
       quantity: row.quantity === null ? null : Number(row.quantity), claimedCount: Number(row.claimed_count), createdAt: row.created_at } : null;
   }
   public listOffers(campaign: string): RewardOfferDto[] {
@@ -41,15 +43,16 @@ export class RewardRepository {
   }
   public createClaim(rewardId: string, wallet: string, delivery: unknown, now: number, content: string | null): RewardClaimDto {
     const id = randomUUID();
+    const storedDelivered = content ? encryptRewardContent(content) : null;
     this.db.prepare(`INSERT INTO reward_claims (id,reward_id,wallet,status,delivery,delivered_content,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?)`).run(id, rewardId, wallet, content === null ? 'pending' : 'fulfilled', JSON.stringify(delivery ?? null), content, now, now);
+      VALUES (?,?,?,?,?,?,?,?)`).run(id, rewardId, wallet, content === null ? 'pending' : 'fulfilled', JSON.stringify(delivery ?? null), storedDelivered, now, now);
     return this.getClaim(id)!;
   }
   public getClaim(id: string): RewardClaimDto | null {
     const row = this.db.prepare(`SELECT c.*,o.campaign FROM reward_claims c JOIN reward_offers o ON o.id=c.reward_id WHERE c.id=?`).get(id) as any;
     return row ? { id: row.id, rewardId: row.reward_id, campaign: row.campaign, wallet: row.wallet,
       status: row.status, delivery: row.delivery ? JSON.parse(row.delivery) : null,
-      deliveredContent: row.delivered_content, createdAt: row.created_at, updatedAt: row.updated_at } : null;
+      deliveredContent: row.delivered_content ? decryptRewardContent(row.delivered_content) : null, createdAt: row.created_at, updatedAt: row.updated_at } : null;
   }
   public findClaim(rewardId: string, wallet: string): RewardClaimDto | null {
     const row = this.db.prepare('SELECT id FROM reward_claims WHERE reward_id=? AND wallet=?').get(rewardId, wallet) as { id: string } | undefined;

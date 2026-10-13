@@ -9,8 +9,15 @@ pub(crate) use instructions::campaign::{
     __client_accounts_add_tranche, __client_accounts_create_draft, __client_accounts_seal_terms,
 };
 pub(crate) use instructions::funding::{__client_accounts_cancel_pledge, __client_accounts_pledge};
+pub(crate) use instructions::release::{
+    __client_accounts_release_tranche, __client_accounts_withdraw_claim,
+};
 pub(crate) use instructions::settlement::{
     __client_accounts_finalize_funding, __client_accounts_refund_for,
+};
+pub(crate) use instructions::voting::{
+    __client_accounts_finalize_vote, __client_accounts_submit_evidence,
+    __client_accounts_vote_milestone,
 };
 pub use instructions::*;
 pub use state::*;
@@ -72,6 +79,48 @@ pub mod bestcrow {
     /// P1.3 — permissionless 100% refund after a failed goal.
     pub fn refund_for(ctx: Context<RefundFor>) -> Result<()> {
         settlement::refund_for(ctx)
+    }
+
+    /// P2.1 — submit evidence for the current tranche, opening 7-day vote.
+    pub fn submit_evidence(
+        ctx: Context<SubmitEvidence>,
+        index: u8,
+        evidence_hash: [u8; 32],
+    ) -> Result<()> {
+        voting::submit_evidence(ctx, index, evidence_hash)
+    }
+
+    /// P2.1 — vote on the current tranche during the 7-day vote.
+    pub fn vote_milestone(
+        ctx: Context<VoteMilestone>,
+        index: u8,
+        approve: bool,
+    ) -> Result<()> {
+        voting::vote_milestone(ctx, index, approve)
+    }
+
+    /// P2.2 — finalize the vote after 7-day window. Strictly >50% approval required.
+    pub fn finalize_vote(
+        ctx: Context<FinalizeVote>,
+        index: u8,
+    ) -> Result<()> {
+        voting::finalize_vote(ctx, index)
+    }
+
+    /// P2.3 — mark approved tranche released and advance to next tranche.
+    pub fn release_tranche(
+        ctx: Context<ReleaseTranche>,
+        index: u8,
+    ) -> Result<()> {
+        release::release_tranche(ctx, index)
+    }
+
+    /// P2.3 — pay an approved tranche to its fixed recipient (the creator).
+    pub fn withdraw_claim(
+        ctx: Context<WithdrawClaim>,
+        index: u8,
+    ) -> Result<()> {
+        release::withdraw_claim(ctx, index)
     }
 
     /// P1.5 — reclaim the bond after a failed or fully completed campaign.

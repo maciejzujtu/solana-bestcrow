@@ -4,9 +4,11 @@
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "build:idl": "node scripts/build-idl.cjs",
     "test:scripts": "tsx --test scripts/*.test.ts",
     "devnet:init-config": "tsx scripts/initialize-protocol-config-v2.ts",
-    "devnet:smoke": "tsx scripts/devnet-v2-smoke.ts"
+    "devnet:smoke": "tsx scripts/devnet-v2-smoke.ts",
+    "devnet:proof-3tranche": "tsx scripts/devnet-v2-proof-3tranche.ts"
   },
   "dependencies": {
     "@anchor-lang/core": "1.1.2"

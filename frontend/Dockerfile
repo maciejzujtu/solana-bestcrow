@@ -1,12 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-bookworm-slim AS deps
+FROM node:22-bookworm-slim AS runner
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
-
-FROM node:22-bookworm-slim AS build
-WORKDIR /app
+ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ARG NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
 ARG NEXT_PUBLIC_SOLANA_RPC_FALLBACK_URL=https://api.devnet.solana.com
@@ -24,17 +20,10 @@ ENV NEXT_PUBLIC_SOLANA_RPC_RETRY_BASE_DELAY_MS=$NEXT_PUBLIC_SOLANA_RPC_RETRY_BAS
 ENV NEXT_PUBLIC_PAYMENT_MODE=$NEXT_PUBLIC_PAYMENT_MODE
 ENV NEXT_PUBLIC_SOLANA_CHAIN=$NEXT_PUBLIC_SOLANA_CHAIN
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN npm run build
 
-FROM node:22-bookworm-slim AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-COPY --from=build /app/package.json ./package.json
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/.next ./.next
+COPY package.json ./package.json
+COPY node_modules ./node_modules
+COPY .next ./.next
 USER node
 EXPOSE 3000
 CMD ["npm", "run", "start", "--", "-H", "0.0.0.0", "-p", "3000"]

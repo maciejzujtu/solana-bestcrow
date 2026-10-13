@@ -1,0 +1,50 @@
+{
+  "schema": "bestcrow/campaign-terms/v2",
+  "asset": "SOL",
+  "campaign_id": "1728800001",
+  "creator": "F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15",
+  "goal_lamports": "10000000000",
+  "funding_duration_seconds": 2592000,
+  "fee_bps": 100,
+  "vote_duration_seconds": 604800,
+  "revision_duration_seconds": 2592000,
+  "second_vote_duration_seconds": 604800,
+  "first_proof_deadline_seconds": 2592000,
+  "tranches": [
+    {
+      "index": 0,
+      "share_bps": 4000,
+      "proof_period_seconds": 2592000,
+      "recipients": [
+        {
+          "address": "F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15",
+          "share_bps": 10000
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "share_bps": 3000,
+      "proof_period_seconds": 2592000,
+      "recipients": [
+        {
+          "address": "F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15",
+          "share_bps": 10000
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "share_bps": 3000,
+      "proof_period_seconds": 2592000,
+      "recipients": [
+        {
+          "address": "F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15",
+          "share_bps": 10000
+        }
+      ]
+    }
+  ],
+  "refund_policy": "remaining_unreserved_pro_rata_v2",
+  "content_uri": "ar://bestcrow-devnet-v2-proof-content-manifest-001"
+}

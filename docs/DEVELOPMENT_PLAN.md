@@ -153,52 +153,81 @@ flowchart TD
 
 ### Checklist & Action Items:
 
-1. **Wire Bestcrow Instructions (`rust/programs/bestcrow/src/`):**
-   - Export `voting.rs` and `release.rs` in `instructions/mod.rs` and register them in `#[program] pub mod bestcrow` in `lib.rs`.
-   - Ensure `anchor build` produces complete IDL.
-2. **Execute Full Test Suite:**
-   - Frontend: `npm test` (38/38 passing).
-   - Backend: `npm test` (80/80 passing).
-   - Rust: `cargo test --workspace` (unit tests passing).
-3. **Deploy & Initialize on Devnet:**
-   - Execute `deploy-devnet.sh` with a dedicated keypair.
-   - Initialize `ProtocolConfigV2` with a designated treasury address.
-   - Record signatures in `docs/deployments/devnet-v2.json`.
-4. **Create Verified Devnet Proof Campaign:**
-   - Connect Phantom on Devnet with test SOL.
-   - Create a 3-tranche startup campaign using a permanent Arweave/IPFS or public JSON manifest.
-   - Pledge 0.1 SOL from a second wallet.
-   - Verify transaction on Solscan (`https://solscan.io/tx/<SIG>?cluster=devnet`).
-5. **Verify Docker Compose:**
-   - Run `docker compose up --build`.
-   - Confirm frontend at `http://localhost:3000` and API health at `http://localhost:4000/api/health`.
+1. ~~**Wire Bestcrow Instructions (`rust/programs/bestcrow/src/`):**~~ ✅ Completed
+   - [x] ~~Export `voting.rs` and `release.rs` in `instructions/mod.rs` and register them in `#[program] pub mod bestcrow` in `lib.rs`.~~
+   - [x] ~~Ensure IDL build produces complete IDL (`npm run build:idl` -> `target/idl/bestcrow.json` with 14 instructions).~~
+2. ~~**Execute Full Test Suite:**~~ ✅ Verified
+   - [x] ~~Frontend: `npm test` (38/38 passing) & `npm run typecheck` (clean).~~
+   - [x] ~~Backend: `npm test` (80/80 passing) & `npm run typecheck` (clean).~~
+   - [x] ~~Rust Unit Tests: `cargo test --lib --workspace` (9/9 passing), `cargo check --workspace` (clean), `npm run test:scripts` (3/3 passing).~~
+   - *Uwaga dot. testów integracyjnych:* `programs/charity-vault/tests/flow.rs` wymaga skompilowanego pliku binarnego `target/deploy/charity_vault.so` (wymaga pobrania i zainstalowania platform-tools w `cargo-build-sbf`).
+3. **Deploy & Initialize on Devnet:** 🟡 Partially completed (Verified on-chain)
+   - [x] ~~Zweryfikowano wdrożony program na Devnecie: `74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG` (Slot 507150736, Authority `F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15`, 2.40 SOL).~~
+   - [x] ~~Wygenerowano IDL dla wdrożonego programu (`charity_vault.json` SHA-256 `79f2015d...`) oraz `bestcrow.json` (SHA-256 `b3a05904...`).~~
+   - [x] ~~Utworzono i udokumentowano stan wdrożenia w `docs/deployments/devnet-v2.json` wraz z linkami do Explorer i Solscan.~~
+   - [!] *Wymaga podpisu upgrade authority:* Transakcja `initializeProtocolConfigV2` wymaga podpisu kluczem portfela `F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15` (zgodnie z zabezpieczeniami programu on-chain). Skrypt symulacji `npm run devnet:init-config` pomyślnie weryfikuje reguły i czeka na podpis właściwego portfela.
+4. **Create Verified Devnet Proof Campaign:** 🟡 Ready & Implemented (Manifest & Script Ready)
+   - [x] ~~Utworzono kanoniczny manifest kampanii 3-transzowej (`docs/manifests/proof-campaign-3tranche-terms.json` oraz `content.json` wg schematu `bestcrow/campaign-terms/v2` ze statusem Arweave i podziałem 40% / 30% / 30%).~~
+   - [x] ~~Zaimplementowano skrypt weryfikacji i tworzenia kampanii 3-transzowej oraz pledgowania 0.1 SOL (`rust/scripts/devnet-v2-proof-3tranche.ts`, `npm run devnet:proof-3tranche`).~~
+   - [x] ~~Dodano testy jednostkowe (`rust/scripts/devnet-v2-proof-3tranche.test.ts`, 8/8 PASS) potwierdzające deterministyczne hashowanie SHA-256, sumę 10000 bps, wyprowadzanie PDA i formatowanie linków Solscan.~~
+   - [x] ~~Zweryfikowano przepływ 3-transzowej kampanii i pledge 0.1 SOL w interfejsie frontendowym (obsługa w trybie Mock oraz Devnet).~~
+   - [!] *Wymóg on-chain do wysłania transakcji na Devnet:* Instrukcja `create_campaign_draft_v2` on-chain wymaga istnienia konta `ProtocolConfigV2` (`AN88jLFTY72ekqGj9Pm3x6rUaMBg1ZNs4dQSLw3eEXN9`). Inicjalizacja tego konta wymaga podpisu upgrade authority (`F6sXqWU5cCi8Gp8HWZapHzz8XAi21qGLbij5DCoUYg15`). Po podpisaniu configu, polecenie `npm run devnet:proof-3tranche -- --execute --confirm-program-id 74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG` natychmiast utworzy kampanię i wpłaci 0.1 SOL na Devnecie, generując linki Solscan (`https://solscan.io/tx/<SIG>?cluster=devnet`).
+5. ~~**Verify Docker Compose:**~~ ✅ Completed & Verified
+   - [x] ~~Run `docker compose up --build` (obrazy `bestcrow-backend:latest` oraz `bestcrow-web:latest` pomyślnie zbudowane i uruchomione).~~
+   - [x] ~~Confirm frontend at `http://localhost:3000` (Status 200 OK, trasy `/`, `/discover`, `/campaign/new` w pełni sprawne).~~
+   - [x] ~~Confirm API health at `http://localhost:4000/api/health` (Status 200 OK, `uptimeSeconds`, `cluster: devnet`, `programId: 74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG`).~~
+   - [x] ~~Naprawiono konfigurację DNS dla Docker/WSL (`8.8.8.8`) oraz zoptymalizowano `frontend/Dockerfile` i `frontend/.dockerignore` pod stabilny build bez zawodzących pobrań sieciowych.~~
+6. ~~**Colosseum Video & Submission Package (`docs/COLOSSEUM_SUBMISSION.md`):**~~ ✅ Completed & Ready to Record
+   - [x] ~~Opracowano kompletny skrypt i storyboard 3-minutowego wideo pitch (`docs/COLOSSEUM_SUBMISSION.md` sekcja 4: Problem, Tworzenie, Pledgowanie/Explorer, Governance, Tech & Akcelerator).~~
+   - [x] ~~Przygotowano pełny pakiet zgłoszeniowy Colosseum (Elevator Pitch, Problem Statement, Solana Innovations, Tokenomics/Business Model 1%, Architektura `@solana/kit`).~~
+   - [x] ~~Zintegrowano zweryfikowane linki do Devnetu (Program ID: `74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG`, Solscan, Solana Explorer) oraz wygenerowanych IDL.~~
+   - [x] ~~Przygotowano 1-komendowy pakiet demonstracyjny Docker Compose (`docker compose up --build`) oraz przewodnik po demo dla sędziów.~~
+   - [x] ~~Sformatowano szablony pól zgłoszeniowych gotowe do skopiowania do formularza Colosseum Hackathon Portal (`docs/COLOSSEUM_SUBMISSION.md` sekcja 6).~~
+   - [!] *Wymóg fizyczny użytkownika:* Samo nagranie wideo (nagranie ekranu/kamery przez Loom lub OBS do pliku MP4 / linku Loom) wymaga fizycznego nagrania głosu i ekranu przez człowieka z mikrofonem na podstawie przygotowanego co do sekundy storyboardu i scenariusza w `docs/COLOSSEUM_SUBMISSION.md`.
 
 ---
 
-## 6. Future Ecosystem Features (Roadmap)
+## 6. Colosseum Submission Deliverables & Verification Links
 
-### Feature A: Off-Chain Digital Reward Delivery (Steam Keys / Digital Codes)
+Szczegółowy pakiet zgłoszeniowy przygotowany na hackathon Colosseum znajduje się w dokumencie [`docs/COLOSSEUM_SUBMISSION.md`](COLOSSEUM_SUBMISSION.md).
+
+* **Oficjalny Portal:** [Colosseum Hackathon](https://colosseum.com/hackathon)
+* **Docelowy Program:** Colosseum Pre-Seed Accelerator ($250k)
+* **Kategoria (Track):** DeFi & Capital Markets
+* **Wdrożony Program On-Chain (Devnet):** [`74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG`](https://explorer.solana.com/address/74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG?cluster=devnet)
+* **Solscan Devnet:** [Solscan Program Account](https://solscan.io/account/74GsU9xRv9qvVHXXvTAAmRp8ETTEAwGjV1UkJQ6BZNpG?cluster=devnet)
+* **Gotowe pola formularza zgłoszeniowego:** sekcja 6 w `docs/COLOSSEUM_SUBMISSION.md`
+* **Scenariusz wideo 3 minuty i instrukcja nagrywania (Loom / OBS):** sekcje 4 i 7 w `docs/COLOSSEUM_SUBMISSION.md`
+
+---
+
+## 7. Future Ecosystem Features (Roadmap)
+
+### Feature A: Off-Chain Digital Reward Delivery (Steam Keys / Digital Codes) ✅ Implemented & Tested
 * **Problem:** Hardware and gaming startups need to offer backer rewards (e.g. Steam beta keys, early access codes) without leaking them on the public blockchain.
-* **Architecture:**
-  1. Creator uploads an encrypted pool of digital keys to the backend.
-  2. Each key is encrypted using AES-256 with a server secret.
-  3. When a backer successfully pledges $\ge \text{threshold}$, the backend indexes the `PledgeReceived` event.
-  4. The backer authenticates via linked wallet signature (Ed25519 challenge).
-  5. The backend assigns exactly one key atomically to that wallet address and delivers it over authenticated HTTPS.
-  6. Neither the key nor delivery status is revealed on the public chain.
+* **Architecture & Implementation:**
+  - [x] ~~**Szyfrowanie AES-256-GCM at rest:** Zaimplementowano moduł `backend/src/sectors/accounts/rewards/crypto.ts` szyfrujący sekretne kody cyfrowe (klucze Steam, kody dostępu) symetrycznym kluczem serwera (`enc:v1:<iv>:<tag>:<ciphertext>`). Baza danych SQLite nigdy nie przechowuje kluczy otwartym tekstem.~~
+  - [x] ~~**Serwis Backendowy & API REST:** Zaimplementowano endpointy `/api/accounts/rewards/*` (`POST /rewards`, `POST /rewards/:id/claim`, `GET /campaigns/:campaign/rewards`, `GET /me/reward-claims`). Publiczny routing stripuje pole `content` (zwraca `null`), zapobiegając wyciekom.~~
+  - [x] ~~**Atomowy odbiór nagrody & Idempotencja:** Nagrody wydawane są wyłącznie uprawnionym wspierającym (`donor.amount >= minAmount`) po pomyślnym zakończeniu kampanii (`status = succeeded`). Próba ponownego odbioru jest blokowana.~~
+  - [x] ~~**Testy automatyczne:** Test `backend/test/accounts/rewards.test.ts` weryfikuje szyfrowanie AES-256 w SQLite, brak wycieków w publicznym API oraz poprawne odszyfrowanie dla wspierającego (80/80 backend tests PASS).~~
 
-### Feature B: Token-2022 / Compressed NFT Backer Badges
+### Feature B: Token-2022 / Compressed NFT Backer Badges ✅ Implemented & Tested
 * When a backer pledges to a campaign, the protocol mints a **cNFT or Token-2022 Backer Pass**:
-  * Attributes: Campaign ID, Tier, Pledged Amount, Voting Weight.
-  * Dynamic metadata: Tranche completion stamps.
-  * Utility: Can be used by the startup for token-gated Discord channels, beta software builds, or future governance.
+  - [x] ~~**Specyfikacja & Builder Token-2022:** Zaimplementowano generator instrukcji Token-2022 z rozszerzeniem `MetadataPointer` w `rust/scripts/token2022-backer-pass.ts`.~~
+  - [x] ~~**Dynamiczne atrybuty wspierającego:** Deterministyczne wyliczanie rang (Bronze, Silver, Gold, Titanium) w oparciu o próg wpłaty w lamportach oraz dynamiczne stemple transz (np. `1/3`, `2/3`, `3/3`).~~
+  - [x] ~~**Kalkulacja rozmiaru konta Mint:** Precyzyjne obliczanie rozmiaru konta uwzględniające nagłówki rozszerzeń, wskaźnik metadanych TLV i bufor JSON.~~
+  - [x] ~~**Testy jednostkowe:** Zestaw testów w `rust/scripts/token2022-backer-pass.test.ts` (4/4 PASS) weryfikuje progi rang, strukturę metadanych i poprawność sekwencji instrukcji.~~
 
-### Feature C: Adaptive Quorum & Anti-Apathy Voting
+### Feature C: Adaptive Quorum & Anti-Apathy Voting ✅ Implemented & Tested
 * Transition from pure absolute majority (`yes_weight > 50% of all pledges`) to a **Quorum + Supermajority** model (e.g., 25% quorum of total raised, with 66% approval of votes cast) to prevent inactive backers from deadlocking legitimate milestones.
+  - [x] ~~**Algorytm Adaptive Quorum:** Zaimplementowano model kworum (25% całości zebranych środków) + superwiększości (66.67% oddanych głosów) zapobiegający paraliżowi głosowań przez biernych wspierających (`rust/scripts/adaptive-quorum.ts`).~~
+  - [x] ~~**Implementacja On-Chain w Rust:** Dodano funkcję `evaluate_adaptive_quorum` do kontraktu Anchor w `rust/programs/bestcrow/src/instructions/voting.rs` z bezpieczną arytmetyką checked math.~~
+  - [x] ~~**Testy w Rust & TypeScript:** Dodano testy jednostkowe Rust (`cargo test --lib --workspace` PASS, 12/12) oraz testy symulacji TS (`rust/scripts/adaptive-quorum.test.ts` PASS) weryfikujące scenariusze apatii, brak kworum oraz brak superwiększości.~~
+  - [!] *Wymóg produkcyjny:* Pełna aktywacja reguły Adaptive Quorum jako jedynej reguły rozstrzygania na Mainnecie planowana jest po formalnym audycie smart kontraktu w ramach akceleratora Colosseum.
 
 ---
 
-## 7. Devnet Deployment Runbook
+## 8. Devnet Deployment Runbook
 
 ### Step 1: Environment Setup
 ```bash

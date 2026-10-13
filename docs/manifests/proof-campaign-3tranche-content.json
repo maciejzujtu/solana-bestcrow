@@ -1,0 +1,18 @@
+{
+  "title": "Solana Decentralized Escrow Protocol V2 - Hackathon Proof Startup",
+  "description": "Milestone-gated crowdfunding on Solana Devnet with strictly ordered tranches, autonomous backer governance, on-chain accounting, and pro-rata investor refund guarantees.",
+  "milestones": [
+    {
+      "title": "Tranche 1: Core Architecture & Devnet Deployment (40%)",
+      "description": "Deployment of the upgradeable V2 Anchor escrow program on Solana Devnet, ProtocolConfigV2 setup, and canonical Arweave terms sealing."
+    },
+    {
+      "title": "Tranche 2: Milestone Evidence & Backer Voting Engine (30%)",
+      "description": "Integration of decentralized evidence submission, 7-day cryptographic backer voting rounds, and revision handling."
+    },
+    {
+      "title": "Tranche 3: Security Audits & Production Release (30%)",
+      "description": "Formal program security review, final milestone verification, split multi-recipient payouts, and emergency pro-rata refund tests."
+    }
+  ]
+}

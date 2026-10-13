@@ -11,7 +11,8 @@ import {
 
 const { Connection, Keypair, PublicKey } = web3;
 
-export const DEVNET_GENESIS_HASH = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1';
+export const DEVNET_GENESIS_HASH = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
+export const DEVNET_GENESIS_HASH_PREFIX = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1';
 export const DEFAULT_DEVNET_RPC = 'https://api.devnet.solana.com';
 export const BPF_UPGRADEABLE_LOADER = new PublicKey(
   'BPFLoaderUpgradeab1e11111111111111111111111',
@@ -121,7 +122,7 @@ export async function loadDevnetContext(args: CliArgs): Promise<DevnetContext> {
 
   const connection = new Connection(rpcUrl, 'confirmed');
   const genesisHash = await connection.getGenesisHash();
-  if (genesisHash !== DEVNET_GENESIS_HASH) {
+  if (genesisHash !== DEVNET_GENESIS_HASH && !genesisHash.startsWith(DEVNET_GENESIS_HASH_PREFIX)) {
     throw new Error(`RPC is not Solana Devnet (unexpected genesis hash ${genesisHash})`);
   }
 
@@ -192,6 +193,10 @@ export function deriveConfigPda(programId: InstanceType<typeof PublicKey>): Inst
 
 export function explorerTransaction(signature: string): string {
   return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+}
+
+export function solscanTransaction(signature: string): string {
+  return `https://solscan.io/tx/${signature}?cluster=devnet`;
 }
 
 export function explorerAddress(address: string): string {

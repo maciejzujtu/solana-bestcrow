@@ -60,7 +60,7 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   if (args.flags.has('--help')) usage();
   const context = await loadDevnetContext(args);
-  const { upgradeAuthority } = await verifyDeployedUpgradeableProgram(context);
+  const { upgradeAuthority } = await verifyDeployedUpgradeableProgram(context, false);
   const configPda = deriveConfigPda(context.programId);
   const configClient = (context.program.account as Record<string, {
     fetchNullable(address: InstanceType<typeof PublicKey>): Promise<ConfigAccount | null>;
